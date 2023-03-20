@@ -45,6 +45,13 @@ int idt_test(){
 	return result;
 }
 
+int idt_0_test() {
+	TEST_HEADER;
+	int i;
+	i = 5 / 0;
+
+}
+
 // add more tests here
 
 /* Checkpoint 2 tests */
@@ -55,6 +62,7 @@ int idt_test(){
 
 /* Test suite entry point */
 void launch_tests(){
-	TEST_OUTPUT("idt_test", idt_test());
+	//TEST_OUTPUT("idt_test", idt_test());
 	// launch your tests here
+	//TEST_OUTPUT("idt_0_test", idt_0_test());
 }
