@@ -6,6 +6,6 @@
 #define numExceptions 21
 #define syscall_vecnum (0x80)
 void init_idt();
-void exception_idt(int32_t fd, const void* buf, int32_t num);
+void exception_idt(int32_t num);
 #endif
 #endif

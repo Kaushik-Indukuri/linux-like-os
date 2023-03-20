@@ -1,28 +1,27 @@
 #ifndef EXCLINK
 #define EXCLINK
 
-//#include "idt.h"
 void division_error();
 void syscall();
-    //void debug()
-    // non_maskable_interrupt
-    // breakpoint
-    // overflow
-    // bound_range_exceeded
-    // invalid_opcode
-    // device_not_available
-    // double_fault
-    // coprocessor_segment_overrun
-    // invalid_Tss
-    // segment_not_present
-    // stack_segment_fault
-    // general_protection_fault
-    //void page_fault();
-    // Reserved
-    // x87_floating_point_Exception
-    // Alignment_Check
-    // Machine_Check
-    // SIMD_floating_point_Exception
-    // Virtualization_Exception
-    // Control_Protection_Exception
+void debug();
+void non_maskable_interrupt();
+void breakpoint();
+void overflow();
+void bound_range_exceeded();
+void invalid_opcode();
+void device_not_available();
+void double_fault();
+void coprocessor_segment_overrun();
+void invalid_Tss();
+void segment_not_present();
+void stack_segment_fault();
+void general_protection_fault();
+void page_fault();
+void x_floating_point_exception();
+void alignment_check();
+void machine_check();
+void simd_floating_point_exception();
+void virtualization_exception();
+void control_protection_exception();
+
 #endif

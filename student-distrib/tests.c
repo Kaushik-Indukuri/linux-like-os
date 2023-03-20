@@ -34,9 +34,12 @@ int idt_test(){
 
 	int i;
 	int result = PASS;
+	while(1);
 	for (i = 0; i < 10; ++i){
 		if ((idt[i].offset_15_00 == NULL) && 
 			(idt[i].offset_31_16 == NULL)){
+				printf("%d", i);
+
 			assertion_failure();
 			result = FAIL;
 		}
@@ -47,8 +50,9 @@ int idt_test(){
 
 int idt_0_test() {
 	TEST_HEADER;
-	int i;
-	i = 5 / 0;
+	int i = 0;
+	int j = 10/i;
+	return j ? PASS : FAIL;
 
 }
 
@@ -64,5 +68,5 @@ int idt_0_test() {
 void launch_tests(){
 	//TEST_OUTPUT("idt_test", idt_test());
 	// launch your tests here
-	//TEST_OUTPUT("idt_0_test", idt_0_test());
+	TEST_OUTPUT("idt_0_test", idt_0_test());
 }
