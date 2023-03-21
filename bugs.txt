@@ -1,0 +1,32 @@
+
+3/19, Sudo Make Exception
+    E: make dep works, but sudo make gives error saying "./debug.sh does not exist"
+    F: Ran command "dos2unix debug.sh" and rebooted vm and compiled fine.
+
+3/19, Error: no such instruction 
+    E: All functions defined in idt.h file have error "no such instruction"
+    F: Wrapped function header portion of file in "#ifndef ASM" then "define ASM 1", and "endif" at end
+
+3/19, "Warning: initializer-string for any array of chars is too long"
+    E: Repeated error in idt.c file, but array declaration seems fine 
+    F: Bounds of array were flipped
+
+3/19, Exception_Linkage.S compilation error 
+    E: After running sudo make, keep getting error "no such instruction." in Exception_Linkage.S. Diff from " Error: no such instruction" 
+    F: Included "Exception_Linkage.h" inside Exception_Linkage.S file, but errors gone once removed.
+
+3/19, Test case does not get reached 
+    E: Test case is not even called, but something works when function call for init_idt  is commented out.
+    F: Was not updating seg_selector of each idt. For each idt from 0 to 255, set seg_selector to KERNEL_CS using: idt[i].seg_selector = KERNEL_CS;
+
+3/20, Print for division error test case not even shown 
+    E: There is no indication on the screen that the test case was failed, and a /0 error has happened.
+    F: Added a while(1) loop after print, so that the error message is hard coded to screen.
+
+3/20, When page is initalized, division error was not working 
+    E: Narrowed it down to assembly in pagingasm.S, something wrong with cr0 maybe
+    F: Set page table addr to 0xb8 instead of 0 and it worked
+
+3/20, Cannot see 2 allocated memories when using info mem 
+    E: Issue is likely with offsets in pagingasm.S.
+    F: Offset for OR cr0 is should be 0x80000001 not 0x80000000;

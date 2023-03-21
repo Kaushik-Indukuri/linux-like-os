@@ -23,5 +23,7 @@ void machine_check();
 void simd_floating_point_exception();
 void virtualization_exception();
 void control_protection_exception();
-
+void hypervisor_injection_exception();
+void vmm_communication_exception();
+void security_exception();
 #endif

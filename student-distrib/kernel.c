@@ -9,6 +9,7 @@
 #include "debug.h"
 #include "tests.h"
 #include "idt.h"
+#include "paging.h"
 
 #define RUN_TESTS
 
@@ -136,8 +137,9 @@ void entry(unsigned long magic, unsigned long addr) {
         tss.esp0 = 0x800000;
         ltr(KERNEL_TSS);
     }
+    /* Init the IDT, PIC, PAGE */
     init_idt(); 
-    /* Init the PIC */
+    page_init();
     i8259_init();
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
@@ -148,7 +150,7 @@ void entry(unsigned long magic, unsigned long addr) {
      * IDT correctly otherwise QEMU will triple fault and simple close
      * without showing you any output */
     //printf("Enabling Interrupts\n"); 
-    sti();
+    //sti();
 
 #ifdef RUN_TESTS
     /* Run tests */

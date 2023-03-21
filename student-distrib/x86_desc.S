@@ -87,7 +87,7 @@ gdt_bottom:
     .align 16
 
 gdt_desc:
-    .word gdt_bottom - gdt - 1
+    .word gdt_bottom - gdt - 1 # Get size of GDT
     .long gdt
 
 ldt:
