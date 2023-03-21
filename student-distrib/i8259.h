@@ -9,8 +9,10 @@
 #include "types.h"
 
 /* Ports that each PIC sits on */
-#define MASTER_8259_PORT    0x20
-#define SLAVE_8259_PORT     0xA0
+#define MASTER_8259_COMMAND    0x20
+#define SLAVE_8259_COMMAND   0xA0
+#define MASTER_8259_DATA    (MASTER_8259_COMMAND+1)
+#define SLAVE_8259_DATA     (SLAVE_8259_COMMAND+1)
 
 /* Initialization control words to init each PIC.
  * See the Intel manuals for details on the meaning
@@ -37,5 +39,8 @@ void enable_irq(uint32_t irq_num);
 void disable_irq(uint32_t irq_num);
 /* Send end-of-interrupt signal for the specified IRQ */
 void send_eoi(uint32_t irq_num);
+
+void keyboard_init();
+void keyboard_ir_handler();
 
 #endif /* _I8259_H */
