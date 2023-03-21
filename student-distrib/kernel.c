@@ -141,6 +141,8 @@ void entry(unsigned long magic, unsigned long addr) {
     init_idt(); 
     page_init();
     i8259_init();
+    keyboard_init();
+
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
@@ -150,7 +152,7 @@ void entry(unsigned long magic, unsigned long addr) {
      * IDT correctly otherwise QEMU will triple fault and simple close
      * without showing you any output */
     //printf("Enabling Interrupts\n"); 
-    //sti();
+    sti();
 
 #ifdef RUN_TESTS
     /* Run tests */

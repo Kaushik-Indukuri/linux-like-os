@@ -161,13 +161,13 @@ int paging_test_f2() {
 
 /* Test suite entry point */
 void launch_tests(){
-	//TEST_OUTPUT("idt_test", idt_test());
+	// TEST_OUTPUT("idt_test", idt_test());
 
 	// launch your tests here
 	// TEST_OUTPUT("syscall_test", syscall_test());
 	// TEST_OUTPUT("idt_0_test", idt_0_test());
 	//  TEST_OUTPUT("paging_test", paging_test());
-	//  TEST_OUTPUT("paging_test_f1", paging_test_f1());
+	 TEST_OUTPUT("paging_test_f1", paging_test_f1());
 	//  TEST_OUTPUT("paging_test_f2", paging_test_f2());
 	//NOT WORKING:
 	// TEST_OUTPUT("idt_test_custom", idt_test_custom());

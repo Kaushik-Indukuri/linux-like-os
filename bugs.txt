@@ -30,3 +30,15 @@
 3/20, Cannot see 2 allocated memories when using info mem 
     E: Issue is likely with offsets in pagingasm.S.
     F: Offset for OR cr0 is should be 0x80000001 not 0x80000000;
+
+Bug 1 - 3/20:
+    The first bug was in initializing the PIC. The incorrect implementation would cause the program to crash. This was fixed
+    by allowing interrups after they were masked for initializing
+
+Bug 2 - 3/21:
+    The second bug was in the keyboard interrupt handler when masking was used. The mask was sent to the slave pic by accident.
+    This was fixed by updating the address for the output 
+
+Bug 3 - 3/21:
+    This bug occured because the keyboard would print the pressed and depressed outputs. This was fixed by adding a range check
+    to ensure that only presses are printed

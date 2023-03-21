@@ -2,6 +2,7 @@
 #include "exception_linkage.h"
 #include "lib.h"
 #include "x86_desc.h"
+#include "keyboard_linkage.h"
 char exception_strings[numExceptions+1][30] = {
     "Division Error",
     "Debug",
@@ -84,6 +85,10 @@ void init_idt()
     SET_IDT_ENTRY(idt[28], hypervisor_injection_exception);
     SET_IDT_ENTRY(idt[29], vmm_communication_exception);
     SET_IDT_ENTRY(idt[30], security_exception);
+
+    SET_IDT_ENTRY(idt[33], kbd_link);
+    idt[33].reserved3 = 1;
+    idt[33].present = 1;
 
     // Set x80 sys call to respective idt table number
     SET_IDT_ENTRY(idt[syscall_vecnum], syscall);
