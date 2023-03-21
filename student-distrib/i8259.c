@@ -9,7 +9,13 @@
 uint8_t master_mask; /* IRQs 0-7  */
 uint8_t slave_mask;  /* IRQs 8-15 */
 
-/* Initialize the 8259 PIC */
+/* void i8259_init() 
+ * 
+ * Initializes 8259 PIC
+ * Inputs: None
+ * Outputs: None
+ * Side Effects: None
+ */
 void i8259_init() 
 {
   
@@ -36,7 +42,13 @@ void i8259_init()
     outb(slave_mask,SLAVE_8259_DATA); //unmask part of 8259A-2
 }
 
-/* Enable (unmask) the specified IRQ */
+/* void enable_irq(uint32_t irq_num) 
+ * 
+ * Enable (unmask) the specified IRQ
+ * Inputs: None
+ * Outputs: None
+ * Side Effects: None
+ */
 void enable_irq(uint32_t irq_num) 
 {
     if(irq_num>15 || irq_num < 0)
@@ -57,7 +69,13 @@ void enable_irq(uint32_t irq_num)
    }        
 }
 
-/* Disable (mask) the specified IRQ */
+/* void disable_irq(uint32_t irq_num) 
+ * 
+ * Disable (mask) the specified IRQ
+ * Inputs: None
+ * Outputs: None
+ * Side Effects: None
+ */
 void disable_irq(uint32_t irq_num) 
 {
     if(irq_num>15 || irq_num<0)
@@ -78,7 +96,13 @@ void disable_irq(uint32_t irq_num)
     }   
 }
 
-/* Send end-of-interrupt signal for the specified IRQ */
+/* void send_eoi(uint32_t irq_num) 
+ * 
+ * Send end-of-interrupt signal for the specified IRQ
+ * Inputs: None
+ * Outputs: None
+ * Side Effects: None
+ */
 void send_eoi(uint32_t irq_num) 
 {
     if(irq_num>=8)
@@ -89,12 +113,25 @@ void send_eoi(uint32_t irq_num)
     //update slave eoi
 }
 
+/* void keyboard_init() 
+ * 
+ * Initializes keyboard to send interrupts
+ * Inputs: None
+ * Outputs: None
+ * Side Effects: None
+ */
 void keyboard_init()
 {
     enable_irq(1); //Initializes keyboard with irq 1 on primary pic
 }
 
-
+/* void keyboard_ir_handler()
+ * 
+ * Handles interrupts from the keyboard and prints appropriate key
+ * Inputs: None
+ * Outputs: None
+ * Side Effects: None
+ */
 void keyboard_ir_handler()
 {
     char keystroke;

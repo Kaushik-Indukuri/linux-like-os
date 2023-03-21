@@ -39,8 +39,9 @@ void enable_irq(uint32_t irq_num);
 void disable_irq(uint32_t irq_num);
 /* Send end-of-interrupt signal for the specified IRQ */
 void send_eoi(uint32_t irq_num);
-
+/*Initializes keyboard to recieve interrups*/
 void keyboard_init();
+/*Handles interrupts from keyboard*/
 void keyboard_ir_handler();
 
 #endif /* _I8259_H */
