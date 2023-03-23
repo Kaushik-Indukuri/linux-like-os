@@ -18,8 +18,6 @@ uint8_t slave_mask;  /* IRQs 8-15 */
  */
 void i8259_init() 
 {
-  
-
     outb(0xFF, MASTER_8259_DATA); //mask all of 8259A-1 
     outb(0xFF, SLAVE_8259_DATA); //mask all of 8259A-2
   
@@ -40,6 +38,8 @@ void i8259_init()
 
     outb(master_mask,MASTER_8259_DATA); //unmask part of 8259A-1
     outb(slave_mask,SLAVE_8259_DATA); //unmask part of 8259A-2
+
+    enable_irq(2);
 }
 
 /* void enable_irq(uint32_t irq_num) 
@@ -107,9 +107,10 @@ void send_eoi(uint32_t irq_num)
 {
     if(irq_num>=8)
     {
-        outb(EOI + irq_num,SLAVE_8259_COMMAND); //Ends EOI on respective PIC
+        outb(EOI | (irq_num-8),SLAVE_8259_COMMAND); //Ends EOI on respective PIC
+        outb(EOI|0x02,MASTER_8259_COMMAND);
     }
-    outb(EOI + irq_num,MASTER_8259_COMMAND);
+    outb(EOI | irq_num,MASTER_8259_COMMAND);
     //update slave eoi
 }
 
