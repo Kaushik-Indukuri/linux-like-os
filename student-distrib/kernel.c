@@ -7,6 +7,7 @@
 #include "lib.h"
 #include "i8259.h"
 #include "keyboard.h"
+#include "terminal.h"
 #include "debug.h"
 #include "tests.h"
 #include "idt.h"
@@ -145,6 +146,12 @@ void entry(unsigned long magic, unsigned long addr) {
     i8259_init();
     keyboard_init();
     rtc_init();
+    terminal_open();
+    char buf [2];
+    buf[0] = 'b';
+    buf[1] = 'x';
+    
+    terminal_write(2,buf,2);
 
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
