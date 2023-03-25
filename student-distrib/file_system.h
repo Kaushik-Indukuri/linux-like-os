@@ -1,4 +1,4 @@
-#include "kernel.c"
+
 #include "lib.h"
 
 #define FILENAME_LEN 32
@@ -31,17 +31,19 @@ typedef struct file_descriptor {
 } file_descriptor_t;
 
 
-extern uint32_t * block_ptr;
+boot_block_t * boot_block_ptr;
 
-int32_t directory_open();
-int32_t directory_close();
-int32_t directory_read();
-int32_t directory_write();
+void filesystem_init(uint32_t * ptr);
 
-int32_t file_open();
-int32_t file_close();
-int32_t file_read();
-int32_t file_write();
+int32_t directory_open(const uint8_t* filename);
+int32_t directory_close(int32_t fd);
+int32_t directory_read(int32_t fd, void* buf, int32_t nbytes);
+int32_t directory_write(int32_t fd, const void* buf, int32_t nbytes);
+
+int32_t file_open(const uint8_t* filename);
+int32_t file_close(int32_t fd);
+int32_t file_read(int32_t fd, void* buf, int32_t nbytes);
+int32_t file_write(int32_t fd, const void* buf, int32_t nbytes);
 
 int32_t read_dentry_by_name (const uint8_t* fname, dentry_t* dentry);
 int32_t read_dentry_by_index (uint32_t index, dentry_t* dentry);

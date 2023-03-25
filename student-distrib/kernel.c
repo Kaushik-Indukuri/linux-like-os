@@ -10,6 +10,7 @@
 #include "tests.h"
 #include "idt.h"
 #include "paging.h"
+#include "file_system.h"
 
 #define RUN_TESTS
 
@@ -17,7 +18,7 @@
 /* Check if the bit BIT in FLAGS is set. */
 #define CHECK_FLAG(flags, bit)   ((flags) & (1 << (bit)))
 
-uint32_t * block_ptr;
+uint32_t * ptr;
 
 /* Check if MAGIC is valid and print the Multiboot information structure
    pointed by ADDR. */
@@ -56,9 +57,9 @@ void entry(unsigned long magic, unsigned long addr) {
         int mod_count = 0;
         int i;
         module_t* mod = (module_t*)mbi->mods_addr;
-        block_ptr = (uint32_t*)mod->mod_start;
         while (mod_count < mbi->mods_count) {
             printf("Module %d loaded at address: 0x%#x\n", mod_count, (unsigned int)mod->mod_start);
+            ptr = (uint32_t*)mod->mod_start;
             printf("Module %d ends at address: 0x%#x\n", mod_count, (unsigned int)mod->mod_end);
             printf("First few bytes of module:\n");
             for (i = 0; i < 16; i++) {
@@ -145,6 +146,7 @@ void entry(unsigned long magic, unsigned long addr) {
     page_init();
     i8259_init();
     keyboard_init();
+    filesystem_init(ptr);
 
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the

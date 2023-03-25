@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "x86_desc.h"
 #include "lib.h"
+#include "file_system.h"
 
 #define PASS 1
 #define FAIL 0
@@ -154,6 +155,96 @@ int paging_test_f2() {
 // add more tests here
 
 /* Checkpoint 2 tests */
+
+int file_system_test_1() {
+	//TEST_HEADER;
+	int fd = file_open((uint8_t *)"frame0.txt");
+	char buf[185];
+	int ret = file_read(fd, buf, 185);
+	if (ret <= 0) {
+		return FAIL;
+	}
+	clear();
+	printf("%s", buf);
+
+	return PASS;
+}
+
+int file_system_test_2() {
+	dentry_t dentry;
+	int ret = read_dentry_by_name ((uint8_t *)"frame0.txt", &dentry);
+	if (ret != 0) {
+		return FAIL;
+	}
+	if (strncmp((int8_t *)"frame0.txt", (int8_t*)(dentry.filename), 32) == 0) {
+		return PASS;
+	}
+	return PASS;
+}
+
+int file_system_test_3() {
+	char buf[185];
+	dentry_t dentry;
+	int ret = read_dentry_by_name ((uint8_t *)"frame0.txt", &dentry);
+	ret = read_data (dentry.inode_num, 0, (uint8_t *)buf, 185);
+	if (ret <= 0) {
+		return FAIL;
+	}
+	clear();
+	printf("%s", buf);
+	return PASS;
+}
+
+int file_system_test_4() {
+	//TEST_HEADER;
+	int fd = file_open((uint8_t *)"frame1.txt");
+	char buf[185];
+	int ret = file_read(fd, buf, 185);
+	if (ret <= 0) {
+		return FAIL;
+	}
+	clear();
+	printf("%s", buf);
+
+	return PASS;
+}
+
+int file_system_test_5() {
+	//TEST_HEADER;
+	int fd = file_open((uint8_t *)"grep");
+	char buf[185];
+	int ret = file_read(fd, buf, 185);
+	if (ret <= 0) {
+		return FAIL;
+	}
+	clear();
+	printf("%s", buf);
+
+	return PASS;
+}
+
+int file_system_test_5() {
+	//TEST_HEADER;
+	int fd = file_open((uint8_t *)"grep");
+	char buf[185];
+	int ret = file_read(fd, buf, 185);
+	if (ret <= 0) {
+		return FAIL;
+	}
+	clear();
+	printf("%s", buf);
+
+	return PASS;
+}
+
+int file_system_test_6() {
+	//TEST_HEADER;
+	char buf[32];
+	directory_read(int32_t fd, buf, 32)
+	return PASS;
+}
+
+
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -167,8 +258,15 @@ void launch_tests(){
 	// TEST_OUTPUT("syscall_test", syscall_test());
 	// TEST_OUTPUT("idt_0_test", idt_0_test());
 	//  TEST_OUTPUT("paging_test", paging_test());
-	 TEST_OUTPUT("paging_test_f1", paging_test_f1());
+	//TEST_OUTPUT("paging_test_f1", paging_test_f1());
 	//  TEST_OUTPUT("paging_test_f2", paging_test_f2());
 	//NOT WORKING:
 	// TEST_OUTPUT("idt_test_custom", idt_test_custom());
+
+
+	//TEST_OUTPUT("file_system_test_1", file_system_test_1());
+	//TEST_OUTPUT("file_system_test_2", file_system_test_2());
+	//TEST_OUTPUT("file_system_test_3", file_system_test_3());
+	TEST_OUTPUT("file_system_test_5", file_system_test_5());
+
 }
