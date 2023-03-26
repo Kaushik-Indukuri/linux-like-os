@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "x86_desc.h"
 #include "lib.h"
+#include "rtc.h"
 
 #define PASS 1
 #define FAIL 0
@@ -154,6 +155,36 @@ int paging_test_f2() {
 // add more tests here
 
 /* Checkpoint 2 tests */
+
+/* Test Read Write Open RTC functions
+ * 
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: RTC freq can be written/read 
+ * Files: rtc.c/h
+ */
+int rtc_test_rw()
+{
+	TEST_HEADER;
+	int i=16,j,flag=0;
+
+	rtc_open(NULL);
+	//comment out write to check if slows
+	rtc_write(NULL, &i,4); //4 not significant since not used
+	for(j=0;j<20;j++){
+
+		rtc_read(NULL, &j,4); //4 not significant since not used
+		printf("f");
+	}
+
+	if(flag!=0)
+	{
+		return FAIL;
+	}
+	return PASS;
+
+}
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -171,4 +202,6 @@ void launch_tests(){
 	//  TEST_OUTPUT("paging_test_f2", paging_test_f2());
 	//NOT WORKING:
 	// TEST_OUTPUT("idt_test_custom", idt_test_custom());
+	TEST_OUTPUT("rtc_test_rw", rtc_test_rw());
+	
 }
