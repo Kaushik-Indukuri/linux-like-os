@@ -6,6 +6,7 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "i8259.h"
+#include "keyboard.h"
 #include "debug.h"
 #include "tests.h"
 #include "idt.h"
@@ -161,6 +162,7 @@ void entry(unsigned long magic, unsigned long addr) {
 
 #ifdef RUN_TESTS
     /* Run tests */
+    clear();
     launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
