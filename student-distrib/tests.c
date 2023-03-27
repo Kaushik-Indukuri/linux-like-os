@@ -151,14 +151,50 @@ int paging_test_f2() {
 }
 
 
-
-// add more tests here
-
 /* Checkpoint 2 tests */
 
+/* file_system_test_1/2/3
+ * 
+ * Check if read / open works, read file, see output of file
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: File System, file_open, file_read
+ * Files: frame0/1/grep.txt, filesystem.c/h
+ */
 int file_system_test_1() {
-	//TEST_HEADER;
+	TEST_HEADER;
 	int fd = file_open((uint8_t *)"frame0.txt");
+	char buf[188];
+	int ret = file_read(fd, buf, 187);
+	if (ret <= 0) {
+		return FAIL;
+	}
+	if (ret != 187) {
+		return FAIL;
+	}
+	clear();
+	printf("%s", buf);
+
+	return PASS;
+}
+int file_system_test_2() {
+	//TEST_HEADER;
+	int fd = file_open((uint8_t *)"frame1.txt");
+	char buf[175];
+	int ret = file_read(fd, buf, 174);
+	if (ret <= 0) {
+		return FAIL;
+	}
+	clear();
+	printf("%s", buf);
+
+	return PASS;
+}
+
+int file_system_test_3() {
+	//TEST_HEADER;
+	int fd = file_open((uint8_t *)"grep");
 	char buf[185];
 	int ret = file_read(fd, buf, 185);
 	if (ret <= 0) {
@@ -169,8 +205,16 @@ int file_system_test_1() {
 
 	return PASS;
 }
-
-int file_system_test_2() {
+/* file_system_test_4
+ * 
+ * Checks if denty can be copied by file name
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: File System, file_open, file_read
+ * Files: frame0.txt
+ */
+int file_system_test_4() {
 	dentry_t dentry;
 	int ret = read_dentry_by_name ((uint8_t *)"frame0.txt", &dentry);
 	if (ret != 0) {
@@ -181,12 +225,20 @@ int file_system_test_2() {
 	}
 	return PASS;
 }
-
-int file_system_test_3() {
-	char buf[185];
+/* file_system_test_5
+ * 
+ * Checks if read data rqads file info inot buffer
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: File System, file_open, file_read, read_data
+ * Files: frame0.txt
+ */
+int file_system_test_5() {
+	char buf[188];
 	dentry_t dentry;
 	int ret = read_dentry_by_name ((uint8_t *)"frame0.txt", &dentry);
-	ret = read_data (dentry.inode_num, 0, (uint8_t *)buf, 185);
+	ret = read_data (dentry.inode_num, 0, (uint8_t *)buf, 187);
 	if (ret <= 0) {
 		return FAIL;
 	}
@@ -194,53 +246,55 @@ int file_system_test_3() {
 	printf("%s", buf);
 	return PASS;
 }
-
-int file_system_test_4() {
-	//TEST_HEADER;
-	int fd = file_open((uint8_t *)"frame1.txt");
-	char buf[185];
-	int ret = file_read(fd, buf, 185);
-	if (ret <= 0) {
-		return FAIL;
-	}
-	clear();
-	printf("%s", buf);
-
-	return PASS;
-}
-
-int file_system_test_5() {
-	//TEST_HEADER;
-	int fd = file_open((uint8_t *)"grep");
-	char buf[185];
-	int ret = file_read(fd, buf, 185);
-	if (ret <= 0) {
-		return FAIL;
-	}
-	clear();
-	printf("%s", buf);
-
-	return PASS;
-}
-
-int file_system_test_5() {
-	//TEST_HEADER;
-	int fd = file_open((uint8_t *)"grep");
-	char buf[185];
-	int ret = file_read(fd, buf, 185);
-	if (ret <= 0) {
-		return FAIL;
-	}
-	clear();
-	printf("%s", buf);
-
-	return PASS;
-}
-
+/* file_system_test_6
+ * 
+ * Checks if dir read and read dentry work. Check if can print directory
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: File System, file_open, file_read, read_data
+ * Files: frame0.txt
+ */
 int file_system_test_6() {
 	//TEST_HEADER;
-	char buf[32];
-	directory_read(int32_t fd, buf, 32)
+	char buf[33];
+	//strncpy(buf, &space, 32);
+	int i;
+	clear();
+	dentry_t dentry;
+	memset(buf, 0, 33);
+	for (i = 0; i < 17; i++) {
+		directory_read(i, buf, 32);
+		read_dentry_by_index (i, &dentry);
+		printf("file_name: %s, file_type: %d, file_size: %d", buf, dentry.filetype, ((inode_t *)(boot_block_ptr + 1) + dentry.inode_num)->length);
+		printf("\n");
+		memset(buf, 0, 33);
+	}
+	return PASS;
+}
+/* file_system_test_7
+ * 
+ * Checks if large text with long name can be read
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: File System, file_open, file_read, read_data
+ * Files: frame0.txt
+ */
+int file_system_test_7() {
+	TEST_HEADER;
+	int fd = file_open((uint8_t *)"verylargetextwithverylongname.tx");
+	char buf[5278];
+	int ret = file_read(fd, buf, 5277);
+	if (ret <= 0) {
+		return FAIL;
+	}
+	if (ret != 5277) {
+		return FAIL;
+	}
+	clear();
+	printf("%s", buf);
+
 	return PASS;
 }
 
@@ -264,9 +318,13 @@ void launch_tests(){
 	// TEST_OUTPUT("idt_test_custom", idt_test_custom());
 
 
-	//TEST_OUTPUT("file_system_test_1", file_system_test_1());
-	//TEST_OUTPUT("file_system_test_2", file_system_test_2());
-	//TEST_OUTPUT("file_system_test_3", file_system_test_3());
-	TEST_OUTPUT("file_system_test_5", file_system_test_5());
+	
+	// TEST_OUTPUT("file_system_test_1", file_system_test_1());
+	// TEST_OUTPUT("file_system_test_2", file_system_test_2());
+	// TEST_OUTPUT("file_system_test_3", file_system_test_3());
+	// TEST_OUTPUT("file_system_test_4", file_system_test_4());
+	// TEST_OUTPUT("file_system_test_5", file_system_test_5());
+	//TEST_OUTPUT("file_system_test_6", file_system_test_6());
+	TEST_OUTPUT("file_system_test_7", file_system_test_7());
 
 }

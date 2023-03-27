@@ -1,7 +1,11 @@
 
 #include "lib.h"
 
-#define FILENAME_LEN 32
+#define FILENAME_LEN 32 //max len of line
+#define DATABLK_LEN 4096 //max len of data block
+#define NUMFILES 63 //max num of files
+#define MAXARRLEN 7 //max num of file arr
+#define MINARRLEN 2 //max num of file arr
 
 typedef struct dentry {
     int8_t filename[FILENAME_LEN];
