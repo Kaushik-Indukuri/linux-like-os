@@ -9,6 +9,7 @@
 
 extern int screen_x;
 extern int screen_y;
+extern char* video_mem;
 
 int32_t printf(int8_t *format, ...);
 void putc(uint8_t c);

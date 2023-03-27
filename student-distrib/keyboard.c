@@ -7,7 +7,12 @@ int shiftFlag = 0;
 int capsFlag = 0;
 int ctrlFlag = 0;
 int altFlag = 0;
+char keyboardBuffer [128];
 int keystroke;
+int kbdStart_x;
+int kbdStart_y;
+int kbdBufPos;
+
 char kbdnumvals [] = {'1','2','3','4','5','6','7','8','9','0','-','=',
                         '!','@','#','$','%','^','&','*','(',')','_','+'};
 char kbdletvals_1 [] = {'q','w','e','r','t','y','u','i','o','p','[',']',
@@ -38,29 +43,75 @@ void keyboard_init()
  */
 void keyboard_ir_handler()
 {
-    sti();
+    int i;
+    cli();
     keystroke = inb(EOI);
     switch(keystroke)
     {
         case 0x2A:
-        case 0x36:
+        case 0x36: //0x2A or 0x36 = Shift Pressed keycode
             shiftFlag = 1;
             break;
         case 0xAA:
-        case 0xB6:
+        case 0xB6: //0xB6 or 0xAA = Shift Released keycode
             shiftFlag = 0;
             break;
-        case 0x3A:
+        case 0x1D: //0x1D = Control Pressed keycode
+            ctrlFlag = 1;
+            break;
+        case 0x9D: //0x9D = Control Released keycode
+            ctrlFlag = 0;
+            break;
+        case 0x3A: //0x3A = Capslock keycode
             capsFlag=(!capsFlag);
-            //printf("%d",capsFlag);
             break;
     }
-    keystroke = printKey(keystroke,shiftFlag,capsFlag);
-    if(keystroke!=0x00)
+    if(keystroke==0x26 && ctrlFlag) //0x26 = keycode for L
     {
-        putc(keystroke);
+        terminal_open();
     }
-    cli();
+    else if(keystroke==0x0E && strlen(keyboardBuffer) > 0) //0x0E = keycode for backspace
+    {
+        kbdBufPos--;
+        keyboardBuffer[kbdBufPos] = ' ';
+        termLineBuffer[kbdBufPos] = ' '; //Fills in backspaced spot with space
+        screen_x = kbdStart_x;
+        screen_y = kbdStart_y;
+        terminal_write(0,keyboardBuffer,kbdBufPos+1);
+        keyboardBuffer[kbdBufPos] = 0x00; //Makes backspaced spot null
+        termLineBuffer[kbdBufPos] = 0x00;
+        screen_x--;
+        update_cursor(screen_x,screen_y);
+     }   
+    else if(keystroke<=0x39 && strlen(keyboardBuffer)<127 && printKey(keystroke,shiftFlag,capsFlag)!=0x00) //0x39 = max range for key inputs
+    {
+        if(strlen(keyboardBuffer)==0)
+        {
+            kbdStart_x = screen_x;
+            kbdStart_y = screen_y; //Sets keyboard line start and end position
+        }
+        keyboardBuffer[kbdBufPos] = printKey(keystroke,shiftFlag,capsFlag);
+        termLineBuffer[kbdBufPos] = printKey(keystroke,shiftFlag,capsFlag);
+        kbdBufPos++;
+        screen_x = kbdStart_x;
+        screen_y = kbdStart_y;
+        terminal_write(0,keyboardBuffer,kbdBufPos); //Rewrites line to terminal
+    }
+    else if(keystroke==0x1C) //0x1C = keycode for enter
+    {
+        if(strlen(keyboardBuffer)==0)
+        {
+            kbdStart_x = screen_x;
+            kbdStart_y = screen_y;  
+        }
+        keyboardBuffer[kbdBufPos] = '\n'; //Adds new line char to buffer
+        termLineBuffer[kbdBufPos] = '\n';
+        screen_x = kbdStart_x;
+        screen_y = kbdStart_y;
+        terminal_write(0,keyboardBuffer,kbdBufPos+1);
+        clear_kbdBuf(); //Clears keyboard buffer
+    }
+    sti();
     send_eoi(1); //ends eoi at start
 }
 
@@ -73,11 +124,11 @@ void keyboard_ir_handler()
  */
 char printKey(int code,int shift,int caps)
 {
-    if(code>=0x02 && code <= 0x0D)//0x02 - start num row, 0x0B - end num row
+    if(code>=0x02 && code <= 0x0D)//0x02 - start num row, 0x0D - end num row
     {
         return(kbdnumvals[(code-0x02)+shift*12]);//offset by 0x02 - start num row
     }
-    else if(code>=0x10 && code <= 0x1B)//0x10 - start let row1, 0x19 - end let row1
+    else if(code>=0x10 && code <= 0x1B)//0x10 - start let row1, 0x1B - end let row1
     {
         if(capsFlag == 1 && code<=0x19)
         {
@@ -88,7 +139,7 @@ char printKey(int code,int shift,int caps)
             return(kbdletvals_1[(code-0x10)+shift*12]);//offset by 0x10 - start let row1 
         }
     }
-    else if(code>=0x1E && code <= 0x29)//0x1E - start let row2, 0x26 - end let row2
+    else if(code>=0x1E && code <= 0x29)//0x1E - start let row2, 0x29 - end let row2
     {
         if(capsFlag == 1 && code<=0x26)
         {
@@ -99,7 +150,7 @@ char printKey(int code,int shift,int caps)
             return(kbdletvals_2[(code-0x1E)+shift*12]);//offset by 0x1E - start let row2
         }
     }
-    else if(code>=0x2B && code <= 0x35)//0x2C - start let row3, 0x32 - end let row3
+    else if(code>=0x2B && code <= 0x35)//0x2C - start let row3, 0x35 - end let row3
     {
         if(capsFlag == 1 && code<=0x32 && code>=0x2C)
         {
@@ -117,24 +168,22 @@ char printKey(int code,int shift,int caps)
     return(0x00);
 }
 
-        //printf("%d",strlen(termLineBuffer));
-        //update_cursor(0,0);
-
-       
-    //    int i = 0;
-    //    clear();
-    //    for (i = 0;i<4;i++)
-    //    {
-    //     //printf("%s",'\n');
-    //    }
-       /* int i;
-        for(i = 0;i<128;i++)
-        {
-            termLineBuffer[i] = ' ';
-        }
-        termLineBuffer[0] = 'A';
-        termLineBuffer[127] = 'B';
-        printf("%s",termLineBuffer);*/
-
+/*
+ * clear_kbdBuf
+ *   DESCRIPTION: Clears Keyboard Buffer
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: Clears the buffer
+ */
+void clear_kbdBuf()
+{
+    int i;
+    for(i = 0;i<128;i++) //128 = max buffer size
+    {
+        keyboardBuffer[i] = 0x00;
+    }
+    kbdBufPos = 0;
+}
 
 

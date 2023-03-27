@@ -12,7 +12,7 @@
 // static int screen_y;
 int screen_x;
 int screen_y;
-static char* video_mem = (char *)VIDEO;
+char* video_mem = (char *)VIDEO;
 
 /* void clear(void);
  * Inputs: void

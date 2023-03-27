@@ -147,11 +147,26 @@ void entry(unsigned long magic, unsigned long addr) {
     keyboard_init();
     rtc_init();
     terminal_open();
-    char buf [2];
-    buf[0] = 'b';
-    buf[1] = 'x';
+   
     
-    terminal_write(2,buf,2);
+    // char buf [128];
+    // int i;
+    // for(i = 0;i<127;i++)
+    // {
+    //    buf[i] = 'H';
+    // }
+    // buf[127] = 'X';
+    // terminal_write(2,buf,128);
+    // for(i = 0;i<127;i++)
+    // {
+    //    buf[i] = 'A';
+    // }
+
+    //terminal_read(2,buf,9);
+    //printf("%s",buf);
+   
+
+
 
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
