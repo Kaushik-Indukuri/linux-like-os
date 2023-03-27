@@ -12,6 +12,7 @@
 #include "idt.h"
 #include "paging.h"
 #include "file_system.h"
+#include "rtc.h"
 
 #define RUN_TESTS
 
@@ -148,6 +149,7 @@ void entry(unsigned long magic, unsigned long addr) {
     i8259_init();
     keyboard_init();
     filesystem_init(ptr);
+    rtc_init();
 
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
