@@ -17,6 +17,7 @@ int termBufPos;
  *   RETURN VALUE: 0 if success
  *   SIDE EFFECTS: Open terminal for input
  */
+ 
 int terminal_open()
 {
     clear();

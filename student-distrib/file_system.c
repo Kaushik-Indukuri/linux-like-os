@@ -29,7 +29,7 @@ int32_t directory_open(const uint8_t* filename) {
     return  0;
 }
 
-/*
+/* 
  * directory_close
  *   DESCRIPTION: does nothing 
  *   INPUTS: Does not use input

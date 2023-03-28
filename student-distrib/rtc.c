@@ -59,6 +59,7 @@ void rtc_ir_handler()
 }
 
 
+
 /*
  * rtc_open
  *   DESCRIPTION: Initializes rtc, enables interrupts, sets freq to 2Hz using

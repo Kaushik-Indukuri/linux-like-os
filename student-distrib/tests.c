@@ -412,6 +412,7 @@ int terminal_test() {
 void launch_tests(){
 	// TEST_OUTPUT("idt_test", idt_test());
 
+
 	// launch your tests here
 	// TEST_OUTPUT("syscall_test", syscall_test());
 	// TEST_OUTPUT("idt_0_test", idt_0_test());
@@ -435,5 +436,6 @@ void launch_tests(){
 	// TEST_OUTPUT("file_system_test_8", file_system_test_8());
 	// TEST_OUTPUT("file_system_test_9", file_system_test_9());
 	// TEST_OUTPUT("terminal_test", terminal_test());
+
 
 }

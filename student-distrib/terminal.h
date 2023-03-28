@@ -5,6 +5,7 @@
 
 extern int termBufPos;
 
+
 extern char termLineBuffer [128];
 /*function to initialize terminal inputs and outputs*/
 int terminal_open();
