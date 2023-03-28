@@ -3,6 +3,7 @@
 #include "lib.h"
 #include "file_system.h"
 #include "rtc.h"
+#include "terminal.h"
 
 #define PASS 1
 #define FAIL 0
@@ -172,25 +173,32 @@ int paging_test_f2() {
  * Coverage: RTC freq can be written/read 
  * Files: rtc.c/h
  */
-int rtc_test_rw()
+void rtc_test_rw()
 {
-	TEST_HEADER;
-	int i=16,j,flag=0;
+	// TEST_HEADER;
+	int i=16;
 
 	rtc_open(NULL);
-	//comment out write to check if slows
 	rtc_write(NULL, &i,4); //4 not significant since not used
-	for(j=0;j<20;j++){
 
-		rtc_read(NULL, &j,4); //4 not significant since not used
-		printf("f");
-	}
+	//comment out write to check if slows
+	// for(j=0;j<20;j++){
 
-	if(flag!=0)
-	{
-		return FAIL;
-	}
-	return PASS;
+	// 	rtc_read(NULL, &j,4); //4 not significant since not used
+	// 	// terminal_write(0,"yugal",5);
+	// }
+	// for(j=0;j<20;j++){
+
+	// 	int temp=514;
+	// 	rtc_read(NULL, &temp,4); //4 not significant since not used
+	// 	// printf("yugal");
+	// }
+
+	// if(flag!=0)
+	// {
+	// 	return FAIL;
+	// }
+	// return PASS;
 
 }
 
@@ -339,6 +347,61 @@ int file_system_test_7() {
 	return PASS;
 }
 
+/* file_system_test_7
+ * 
+ * Checks if large text with long name can be read
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: File System, file_open, file_read, read_data
+ * Files: frame0.txt
+ */
+int file_system_test_8() {
+	TEST_HEADER;
+	int fd = file_open((uint8_t *)"verylargetextwithverylongname.txt");
+	if (fd == -1) {
+		return PASS;
+	}
+	return FAIL;
+}
+
+/* file_system_test_9
+ * 
+ * Checks if large text with long name can be read
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: File System, file_open, file_read, read_data
+ * Files: frame0.txt
+ */
+int file_system_test_9() {
+	TEST_HEADER;
+	int fd = directory_open((uint8_t *)".");
+	if (fd != -1) {
+		return PASS;
+	}
+	return FAIL;
+}
+
+/* terminal_read check
+ * 
+ * Checks if large text with long name can be read
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: File System, file_open, file_read, read_data
+ * Files: frame0.txt
+ */
+int terminal_test() {
+	char bufinp[128];
+	while(1)
+    {
+        terminal_read(2,bufinp,128);
+        terminal_write(2,bufinp,128);
+        bufinp[0] = '\n';
+        terminal_write(2,bufinp,1);
+    }
+}
 
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
@@ -353,19 +416,24 @@ void launch_tests(){
 	// TEST_OUTPUT("syscall_test", syscall_test());
 	// TEST_OUTPUT("idt_0_test", idt_0_test());
 	//  TEST_OUTPUT("paging_test", paging_test());
-	//TEST_OUTPUT("paging_test_f1", paging_test_f1());
+	// TEST_OUTPUT("paging_test_f1", paging_test_f1());
 	//  TEST_OUTPUT("paging_test_f2", paging_test_f2());
 	//NOT WORKING:
 	// TEST_OUTPUT("idt_test_custom", idt_test_custom());
-
-
+	// rtc_test_rw(); //CALL TEST CASE WITH THIS
+	// TEST_OUTPUT("rtc_test_rw", rtc_test_rw()); //DONT UNCOMMENT THIS
 	
 	// TEST_OUTPUT("file_system_test_1", file_system_test_1());
 	// TEST_OUTPUT("file_system_test_2", file_system_test_2());
 	// TEST_OUTPUT("file_system_test_3", file_system_test_3());
+
 	// TEST_OUTPUT("file_system_test_4", file_system_test_4());
+
 	// TEST_OUTPUT("file_system_test_5", file_system_test_5());
-	//TEST_OUTPUT("file_system_test_6", file_system_test_6());
-	TEST_OUTPUT("file_system_test_7", file_system_test_7());
+	// TEST_OUTPUT("file_system_test_6", file_system_test_6());
+	// TEST_OUTPUT("file_system_test_7", file_system_test_7());
+	// TEST_OUTPUT("file_system_test_8", file_system_test_8());
+	// TEST_OUTPUT("file_system_test_9", file_system_test_9());
+	// TEST_OUTPUT("terminal_test", terminal_test());
 
 }

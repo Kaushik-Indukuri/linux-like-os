@@ -6,6 +6,7 @@
 char termLineBuffer [128];
 int screenWidth = 80;//Screen width = 80 chars
 int screenHeight = 25;//Screen height = 25 chars
+int termBufPos;
 
 
 /*
@@ -52,12 +53,14 @@ int terminal_close()
  */
 int terminal_read(int32_t fd,char* buf,int n)
 {
-    while(termLineBuffer[kbdBufPos] != '\n'); //Waits until new line char is recieved
+    while(termLineBuffer[termBufPos] != '\n'); //Waits until new line char is recieved
+    termLineBuffer[termBufPos] = 0x00;
     int i;
     for(i=0;i<n;i++)
     {
         buf[i] = termLineBuffer[i]; //Copies keyboard buffer to buf
     }
+    clear_termBuf();
     return n;
 }
 /*
@@ -73,25 +76,28 @@ int terminal_write(int32_t fd,char* buf,int n)
     int i;
     for(i = 0;i<n;i++) //Writes all chars to terminal
     {
-        if(screen_x == (screenWidth-1)) //goes to newline if char is at the end
+        if(buf[i] != 0x00)
         {
-            putc(buf[i]);
-            screen_y++;
-            if(screen_y == screenHeight)
+            if(screen_x == (screenWidth-1)) //goes to newline if char is at the end
             {
-                terminal_scroll(); //Scrolls to newline if input is at bottom
-                screen_y=screenHeight-1;
-                kbdStart_y--;
+                putc(buf[i]);
+                screen_y++;
+                if(screen_y == screenHeight)
+                {
+                    terminal_scroll(); //Scrolls to newline if input is at bottom
+                    screen_y=screenHeight-1;
+                    kbdStart_y--;
+                }
+                screen_x = 0;   
             }
-            screen_x = 0;   
-        }
-        else
-        {
-            putc(buf[i]);
-            if(screen_y == screenHeight)
+            else
             {
-                terminal_scroll();
-                screen_y=screenHeight-1;
+                putc(buf[i]);
+                if(screen_y == screenHeight)
+                {
+                    terminal_scroll();
+                    screen_y=screenHeight-1;
+                }
             }
         }
         update_cursor(screen_x,screen_y);

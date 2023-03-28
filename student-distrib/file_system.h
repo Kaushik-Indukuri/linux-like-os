@@ -36,6 +36,8 @@ typedef struct file_descriptor {
 
 
 boot_block_t * boot_block_ptr;
+int fp;
+dentry_t dir_dentry;
 
 void filesystem_init(uint32_t * ptr);
 

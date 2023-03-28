@@ -43,7 +43,7 @@ void keyboard_init()
  */
 void keyboard_ir_handler()
 {
-    int i;
+    //int i;
     cli();
     keystroke = inb(EOI);
     switch(keystroke)
@@ -109,6 +109,7 @@ void keyboard_ir_handler()
         screen_x = kbdStart_x;
         screen_y = kbdStart_y;
         terminal_write(0,keyboardBuffer,kbdBufPos+1);
+        termBufPos = kbdBufPos;
         clear_kbdBuf(); //Clears keyboard buffer
     }
     sti();

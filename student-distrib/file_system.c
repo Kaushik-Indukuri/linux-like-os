@@ -12,7 +12,8 @@ int curr_pcb_index = MINARRLEN;
  *   SIDE EFFECTS: Stores a local version of the first block ptr
  */
 void filesystem_init(uint32_t * ptr) {
-    boot_block_ptr = (boot_block_t *)ptr;
+    boot_block_ptr = (boot_block_t *)ptr;   //initializing global vars
+    fp = 0;
 }
 
 /*
@@ -24,6 +25,7 @@ void filesystem_init(uint32_t * ptr) {
  *   SIDE EFFECTS: 
  */
 int32_t directory_open(const uint8_t* filename) {
+    read_dentry_by_name (filename, &dir_dentry);    // open directrory and put in global dentry
     return  0;
 }
 
@@ -48,15 +50,18 @@ int32_t directory_close(int32_t fd) {
  *   SIDE EFFECTS: 
  */
 int32_t directory_read(int32_t fd, void* buf, int32_t nbytes) {
-    pcb[fd].file_position++;
+    int idx = fp;
+    fp++;
     int len;
-    if (strlen((uint8_t *)boot_block_ptr->direntries[fd].filename) >= FILENAME_LEN) {
+    dentry_t dentry;
+    read_dentry_by_index(idx, &dentry); // get index from curr file ptr
+    if (strlen((int8_t *)dentry.filename) >= FILENAME_LEN) {   // get min of len and 32
         len = FILENAME_LEN;
     }
     else {
-        len = strlen((uint8_t *)boot_block_ptr->direntries[fd].filename);
+        len = strlen((int8_t *)dentry.filename);
     }
-    memcpy(buf, boot_block_ptr->direntries[fd].filename, len);
+    memcpy(buf, dentry.filename, len);  // copy over filename to buf
     return 0;
 }
 
@@ -82,22 +87,25 @@ int32_t directory_write(int32_t fd, const void* buf, int32_t nbytes) {
  *   SIDE EFFECTS: 
  */
 int32_t file_open(const uint8_t* filename) {
-    if (curr_pcb_index == MAXARRLEN) {
+    if (curr_pcb_index == MAXARRLEN) {  // error check for filaname length and file array
         return -1;
     }
     if (filename == NULL) {
         return -1;
     }
-    dentry_t dentry;
-    if (read_dentry_by_name(filename, &dentry) != 0) {
+    if (strlen((int8_t*)filename) > 32) {
         return -1;
     }
-    file_descriptor_t fd;
+    dentry_t dentry;
+    if (read_dentry_by_name(filename, &dentry) != 0) {  // get dentry with associated filename
+        return -1;
+    }
+    file_descriptor_t fd;   // copy over dentry to user ptr
     fd.inode = dentry.inode_num;
     fd.file_position = 0;
     pcb[curr_pcb_index] = fd;
     curr_pcb_index++;
-    return curr_pcb_index - 1;
+    return curr_pcb_index - 1;  // return index in file array
 }
 
 /*
@@ -110,7 +118,7 @@ int32_t file_open(const uint8_t* filename) {
  */
 
 int32_t file_close(int32_t fd) {
-    if (curr_pcb_index == MINARRLEN) {
+    if (curr_pcb_index == MINARRLEN) {  // check if filename is null and remove fd
         return -1;
     }
     curr_pcb_index--;
@@ -126,12 +134,12 @@ int32_t file_close(int32_t fd) {
  *   SIDE EFFECTS: 
  */
 int32_t file_read(int32_t fd, void* buf, int32_t nbytes) {
-    if (buf == NULL) {
+    if (buf == NULL) {  // check buf
         return -1;
     }
     int inode = pcb[fd].inode;
-    int ret = read_data(inode, 0, buf, nbytes);
-    pcb[fd].file_position += ret;
+    int ret = read_data(inode, 0, buf, nbytes); // take data with associated filename
+    pcb[fd].file_position += ret;   // update file pos
     return ret;
 }
 
@@ -156,7 +164,7 @@ int32_t file_write(int32_t fd, const void* buf, int32_t nbytes) {
  *   SIDE EFFECTS: 
  */
 int32_t read_dentry_by_name (const uint8_t* fname, dentry_t* dentry) {
-    if (strlen((char*)fname) > FILENAME_LEN) {
+    if (strlen((char*)fname) > FILENAME_LEN) {      // error check input vals
         return -1;
     }
     if (dentry == NULL) {
@@ -166,8 +174,8 @@ int32_t read_dentry_by_name (const uint8_t* fname, dentry_t* dentry) {
     int i;
     for (i = 0; i < NUMFILES; i++) {
         dentry_t copy_dentry = *(dentry_ptr + i);
-        if (strncmp((int8_t*)fname, (int8_t*)(copy_dentry.filename), FILENAME_LEN) == 0) {
-            strncpy(dentry->filename, copy_dentry.filename, FILENAME_LEN);
+        if (strncmp((int8_t*)fname, (int8_t*)(copy_dentry.filename), FILENAME_LEN) == 0) {  // check if curr dentry matches filename
+            strncpy(dentry->filename, copy_dentry.filename, FILENAME_LEN);  // if it does copy found dentry to user dentry
             dentry->filetype = copy_dentry.filetype;
             dentry->inode_num = copy_dentry.inode_num;
             return 0;
@@ -185,16 +193,17 @@ int32_t read_dentry_by_name (const uint8_t* fname, dentry_t* dentry) {
  *   SIDE EFFECTS: 
  */
 int32_t read_dentry_by_index (uint32_t index, dentry_t* dentry) {
-    if (index >= NUMFILES) {
+    if (index >= NUMFILES) {    // error check user vals
         return -1;
     }
     if (dentry == NULL) {
         return -1;
     }
     dentry_t * dentry_ptr = boot_block_ptr->direntries;
-    dentry_t copy_dentry = *(dentry_ptr + index);
+    dentry_t copy_dentry = *(dentry_ptr + index);   // find index from given and copy over dentry to user
+    strncpy(dentry->filename, copy_dentry.filename, FILENAME_LEN);
     dentry->filetype = copy_dentry.filetype;
-    dentry->inode_num = copy_dentry.inode_num;
+    dentry->inode_num = copy_dentry.inode_num;  // copyying values
     return 0;
 }
 
@@ -207,7 +216,7 @@ int32_t read_dentry_by_index (uint32_t index, dentry_t* dentry) {
  *   SIDE EFFECTS: 
  */
 int32_t read_data (uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length) {
-    inode_t * inode_ptr = (inode_t *)(boot_block_ptr + 1 + inode);
+    inode_t * inode_ptr = (inode_t *)(boot_block_ptr + 1 + inode);  // get data block ptr and inode ptr
     uint8_t * data_ptr = (uint8_t *)(boot_block_ptr + 1 + boot_block_ptr->inode_count);
     int len = inode_ptr->length;
     if (offset >= len) {
@@ -215,12 +224,15 @@ int32_t read_data (uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t lengt
     }
     int i;
     int ret = 0;
-    for (i = offset; i < length + offset; i++, buf++, ret++) {
+    for (i = offset; i < length + offset; i++, buf++, ret++) {  // go through num of bytes to copy
         if (i >= len) {
             return ret;
         }
-        int t = inode_ptr->data_block_num[i / DATABLK_LEN];
-        memcpy(buf, (uint8_t*)(data_ptr + DATABLK_LEN * t + i % DATABLK_LEN), 1);
+        int t = inode_ptr->data_block_num[i / DATABLK_LEN]; // skip blocks every num
+        if (t >= boot_block_ptr->data_count) {  // check if data block is within amount of blocks
+            continue;
+        }
+        memcpy(buf, (uint8_t*)(data_ptr + DATABLK_LEN * t + i % DATABLK_LEN), 1); // read over data block and copy vals
     }
     return ret;
 }

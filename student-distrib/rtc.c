@@ -22,7 +22,7 @@ volatile int rtc_interrupt_flag=0;
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: none
- *   SIDE EFFECTS: Initializes   *********************FINISH THIS
+ *   SIDE EFFECTS: none
  */
 
 /*Initialize RTC*/
@@ -51,6 +51,7 @@ void rtc_init(void)
 void rtc_ir_handler()
 {
     outb(0x0C,rtcIO);	// select register C
+    // terminal_write(0,"123",3);
     inb(cmosIO);
     //test_interrupts();
     send_eoi(8);
