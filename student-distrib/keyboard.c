@@ -166,6 +166,10 @@ char printKey(int code,int shift,int caps)
     {
         return(' ');    
     }
+    else if(code == 0x0F) //0x0F - value for tab
+    {
+        return('\t');
+    }
     return(0x00);
 }
 

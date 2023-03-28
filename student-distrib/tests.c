@@ -435,7 +435,7 @@ void launch_tests(){
 	// TEST_OUTPUT("file_system_test_7", file_system_test_7());
 	// TEST_OUTPUT("file_system_test_8", file_system_test_8());
 	// TEST_OUTPUT("file_system_test_9", file_system_test_9());
-	// TEST_OUTPUT("terminal_test", terminal_test());
+	TEST_OUTPUT("terminal_test", terminal_test());
 
 
 }

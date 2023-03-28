@@ -81,7 +81,14 @@ int terminal_write(int32_t fd,char* buf,int n)
         {
             if(screen_x == (screenWidth-1)) //goes to newline if char is at the end
             {
-                putc(buf[i]);
+                if(buf[i] == '\t')
+                {
+                    terminal_write(2,"    ",4); //Prints 4 spaces for tab
+                }
+                else
+                {
+                    putc(buf[i]);
+                }
                 screen_y++;
                 if(screen_y == screenHeight)
                 {
@@ -93,7 +100,14 @@ int terminal_write(int32_t fd,char* buf,int n)
             }
             else
             {
-                putc(buf[i]);
+                if(buf[i] == '\t')
+                {
+                    terminal_write(2,"    ",4); //Prints 4 spaces for tab
+                }
+                else
+                {
+                    putc(buf[i]);
+                }
                 if(screen_y == screenHeight)
                 {
                     terminal_scroll();
