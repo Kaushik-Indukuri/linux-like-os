@@ -100,12 +100,7 @@ int32_t file_open(const uint8_t* filename) {
     if (read_dentry_by_name(filename, &dentry) != 0) {  // get dentry with associated filename
         return -1;
     }
-    file_descriptor_t fd;   // copy over dentry to user ptr
-    fd.inode = dentry.inode_num;
-    fd.file_position = 0;
-    pcb[curr_pcb_index] = fd;
-    curr_pcb_index++;
-    return curr_pcb_index - 1;  // return index in file array
+    return 0;  // return index in file array
 }
 
 /*

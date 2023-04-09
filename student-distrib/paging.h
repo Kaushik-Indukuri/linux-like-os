@@ -2,7 +2,7 @@
 #define page_enteries 1024
 #define KB4 4096 //4kb in bits
 
-typedef struct ge_directory_entry {
+typedef struct page_directory_entry {
     union {
         struct { // 4mb struct from desceiptors.dvi
             uint32_t p : 1;
@@ -53,6 +53,9 @@ typedef struct __attribute__ ((packed)) page_table_entry{
 page_directory_entry_t page_directory[page_enteries] __attribute__((aligned(KB4)));
 
 page_table_entry_t page_table[page_enteries] __attribute__((aligned(KB4)));
+
+page_table_entry_t video_mapping[page_enteries] __attribute__((aligned(KB4)));
+
 
 // Initalize page table vectors, directory vectors
 void page_init();

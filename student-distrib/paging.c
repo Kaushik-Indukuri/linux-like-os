@@ -29,6 +29,7 @@ void page_init()
     }
     //For each entry, set bit based on descriptors.dvi
     for (i = 0; i < page_enteries; i++) {
+        // points to page table for vid mem
         if (i == 0) {
             page_directory[i].p = 1;
             page_directory[i].rw = 1;
@@ -43,6 +44,7 @@ void page_init()
             // Set directory to point to table 
             page_directory[i].addrlong = (uint32_t)page_table >> 12; //Offset by 12 bc you only want 10 MSB 
         }
+        // kernel 4mb page
         else if (i == 1) {
             page_directory[i].p = 1;
             page_directory[i].rw = 1;
@@ -55,7 +57,22 @@ void page_init()
             page_directory[i].res = 1;
             page_directory[i].ps = 1;
             // Set directory to point to table 
-            page_directory[i].addrlong = 1 << 10; //Offset by 10 bc you only want 10 MSB
+            page_directory[i].addrshort = 1; //Offset by 10 bc you only want 10 MSB
+        }
+        // user 4mb page
+        else if (i == 2) {
+            page_directory[i].p = 1;
+            page_directory[i].rw = 1;
+            page_directory[i].us = 0;
+            page_directory[i].pwt = 0;
+            page_directory[i].pcd = 0;
+            page_directory[i].a = 0;
+            page_directory[i].d = 0;
+            page_directory[i].g = 0;
+            page_directory[i].res = 1;
+            page_directory[i].ps = 1;
+            // Set directory to point to table 
+            page_directory[i].addrshort = 1 << 1; //Offset by 10 bc you only want 10 MSB
         }
         else {
             page_directory[i].p = 0;
