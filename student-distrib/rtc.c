@@ -29,14 +29,14 @@ volatile int rtc_interrupt_flag=0;
 void rtc_init(void)
 {
     enable_irq(8); //secondary pic to enable rtc interrupt
-    cli();
+    //cli();
     //outportb(0x70, 0x8A); //Disable NMIs on reg A
     //outportb(0x71, 0x20);
     outb(cmosREGB,rtcIO); //Disable NMIs on reg B
     char prev=inb(cmosIO); //Read current value of reg B
     outb(cmosREGB,rtcIO);		// set the index again (a read will reset the index to register D)
     outb(prev | 0x40,cmosIO);	// write the previous value ORed with 0x40. This turns on bit 6 of register B
-    sti();
+    //sti();
 }
 
 /*
@@ -77,12 +77,12 @@ int32_t rtc_open(const uint8_t* filename)
         return rate;
     }
     rate &=0x0F;			// rate must be above 2 and not over 15
-    cli();
+    //cli();
     outb(0x8A,0x70);		// set index to register A, disable NMI
     char prev=inb(0x71);	// get initial value of register A
     outb(0x8A,0x70);		// reset index to A
     outb((prev & 0xF0) | rate, 0x71); //write only our rate to A. Note, rate is the bottom 4 bits.
-    sti();
+    //sti();
     return 0;
 }
 
@@ -141,12 +141,12 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes)
         return rate;
     }
     rate &=0x0F;			// rate must be above 2 and not over 15
-    cli();
+    //cli();
     outb(0x8A,0x70);		// set index to register A, disable NMI
     char prev=inb(0x71);	// get initial value of register A
     outb(0x8A,0x70);		// reset index to A
     outb((prev & 0xF0) | rate, 0x71); //write only our rate to A. Note, rate is the bottom 4 bits.
-    sti();
+    //sti();
     return 0;
 }
 

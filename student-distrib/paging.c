@@ -63,7 +63,7 @@ void page_init()
         else if (i == 32) {
             page_directory[i].p = 1;
             page_directory[i].rw = 1;
-            page_directory[i].us = 0;
+            page_directory[i].us = 1;
             page_directory[i].pwt = 0;
             page_directory[i].pcd = 0;
             page_directory[i].a = 0;

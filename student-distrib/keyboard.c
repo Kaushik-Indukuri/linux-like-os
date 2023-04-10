@@ -44,7 +44,7 @@ void keyboard_init()
 void keyboard_ir_handler()
 {
     //int i;
-    cli();
+    //cli();
     keystroke = inb(EOI);
     switch(keystroke)
     {
@@ -112,7 +112,7 @@ void keyboard_ir_handler()
         termBufPos = kbdBufPos;
         clear_kbdBuf(); //Clears keyboard buffer
     }
-    sti();
+    //sti();
     send_eoi(1); //ends eoi at start
 }
 

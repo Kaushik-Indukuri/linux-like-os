@@ -10,6 +10,7 @@
         pushl %edx
         pushl %ecx
         pushl %ebx
+        sti
         call *syscalltable(,%eax,4)
         addl $12, %esp
         popfl
@@ -25,9 +26,4 @@
         .long 0x00000000
         .long halt, execute, read, write, open, close
 
-.text
-.globl flushtlb
-flushtlb:
-    movl %cr3, %eax
-    movl %eax, %cr3
 

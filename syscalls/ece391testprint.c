@@ -6,7 +6,7 @@
 int main ()
 {
 
-    ece391_fdputs (1, (uint8_t*)"Hello, if this ran, the program was correct. Yay!\n");
+    while(1){ece391_fdputs (1, (uint8_t*)"Hello, if this ran, the program was correct. Yay!\n");}
 
     return 0;
 }

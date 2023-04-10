@@ -19,7 +19,7 @@ int i;
 
 pcb_t* pcb_ptr;
 pcb_t pcb_array[2];
-int pid = -1;
+int pid;
 file_operations_t stdin;
 file_operations_t stdout;
 file_operations_t rtc;
@@ -35,6 +35,17 @@ file_operations_t directory;
 #define KERNEL_LDT  0x0038
 
 
+void flushtlb() {
+    asm volatile(" \n\
+        movl %%cr3, %%eax \n\
+        movl %%eax, %%cr3 \n\
+        "
+        :
+        :
+        : "memory"
+    );
+}
+
 void syscall_init() {
     rtc.open = rtc_open;
     rtc.close = rtc_close;
@@ -48,6 +59,7 @@ void syscall_init() {
     directory.close = directory_close;
     directory.read = directory_read;
     directory.write = directory_write;
+    pid = -1;
 }
 
 int32_t halt (const uint8_t* command)
@@ -61,40 +73,45 @@ int32_t halt (const uint8_t* command)
     //     :"a"(pcb_ptr->prev_esp),"b"(pcb_ptr->prev_ebp)
     //     :
     // );
+
+
     return 0;
 }
 
 int32_t execute (const uint8_t* command)
 {
     /*Parse Arguements*/
-    int cmdLen = 5;
-    // while(command[i]!=' ')
-    // {
-    //     cmdLen++;
-    //     i++;
-    // }
+    int cmdLen = 0;
+    while(command[i]!=0x00)
+    {
+        cmdLen++;
+        i++;
+    }
     char file_exec[cmdLen+1];
     for(i = 0;i<cmdLen;i++)
     {
         file_exec[i] = command[i];
     }
-    file_exec[cmdLen] = 0x00;
-
+    file_exec[cmdLen] = '\0';
+ 
     /*Check executable*/
     dentry_t dentry;
-    if(read_dentry_by_name ((uint8_t*)file_exec, &dentry)==-1)
+    if(read_dentry_by_name((uint8_t*)file_exec, &dentry)==-1)
     {
         return -1;
     }
-    char buf[4];
+    
+
+    char buf[5];
     if(read_data(dentry.inode_num, 0,(uint8_t*)buf, 4)==-1)
     {
         return -1;
     }
+    buf[4] = '\0';
     char elf[4] = {0x7F, 'E', 'L', 'F'}; //ELF FORMAT MAGIC NUMBERS 
-    if (!strncmp(buf, elf, 4))
+    if (strncmp(buf, elf, 4) != 0)
     {
-        //return -1;
+        return -1;
     }
 
     /*Setup program paging*/
@@ -103,15 +120,18 @@ int32_t execute (const uint8_t* command)
         pid--;
         return -1;
     }
-    page_directory[32].addrshort = (MB_8 + MB_4*pid) >> 22;
+    page_directory[32].addrlong = (MB_8 + MB_4*pid) / MB_4;
+
     flushtlb();
 
     /*Move exectubale data into virtual address space*/
     pcb_ptr = pcb_array + pid;
     uint8_t * program_ptr = (uint8_t *)(user_page_start + user_program_start);
     if (read_data(dentry.inode_num, 0, program_ptr, ((inode_t *)(boot_block_ptr) + 1 + dentry.inode_num)->length * KB4) == -1) {
+        pid--;
         return -1;
     }
+
     pcb_ptr->pid = pid;
     pcb_ptr->parent_pid = pid-1;
     for (i = 2; i < 8; i++) {
@@ -141,12 +161,15 @@ int32_t execute (const uint8_t* command)
     pcb_ptr->file_array[1].file_operations_ptr = &stdout;
     pcb_ptr->file_array[1].flags = 1;
 
-    char entry_pt[4];
+    uint8_t entry_pt[4];
     if (read_data(dentry.inode_num, 24, (uint8_t *)entry_pt, 4) == -1) {
+        pid--;
         return -1;
     }
-    uint32_t new_eip = entry_pt[3] + (entry_pt[2] << 8) + (entry_pt[1] << 16) + (entry_pt[0] << 24);
-    uint32_t new_esp = MB_8 * 4;
+
+
+    uint32_t new_eip = entry_pt[0] + (entry_pt[1] << 8) + (entry_pt[2] << 16) + (entry_pt[3] << 24);
+    uint32_t new_esp = (MB_4 * 33) - 4;
 
     register uint32_t ebp asm("ebp");
     register uint32_t esp asm("esp");
@@ -155,22 +178,27 @@ int32_t execute (const uint8_t* command)
     pcb_ptr->prev_esp = esp;
     // pcb_ptr->prev_eip = eip;
 
-    tss.ss0 = KERNEL_DS;
-    tss.esp0 = (MB_8-(KB_8*pid)-4);
+    // tss.ss0 = KERNEL_DS;
+    // tss.esp0 = (MB_8-(KB_8*(pid+1)));
 
+    sti();
 
-    asm volatile(" \n\
+    // printf("%d%s",new_eip,"\n");
+    // return 0;
+
+     asm volatile(" \n\
         pushl %%eax \n\
         pushl %%ebx \n\
         pushfl \n\
         pushl %%ecx \n\
-        pushl %%edx \n\
+        pushl %%edx  \n\
         iret    \n\
         "
         :
         :"a"(USER_DS),"b"(new_esp),"c"(USER_CS),"d"(new_eip)
         : "memory"
     );
+
     return 0;// "eax", "ebx", "ecx", "edx"
 }
 
@@ -229,7 +257,7 @@ int32_t close(int32_t fd)
     pcb_ptr->file_array[fd].file_position = 0; // Definetly wrong lol rahul is supposed to be here LOL
     pcb_ptr->file_array[fd].flags = 0;
 
-    return pcb_ptr->file_array[0].file_operations_ptr->close(fd);     
+    return pcb_ptr->file_array[fd].file_operations_ptr->close(fd);     
 }
 int32_t read(int32_t fd, void* buf, int32_t nbytes)
 {
@@ -255,7 +283,7 @@ int32_t write(int32_t fd, const void* buf, int32_t nbytes)
     {
         return -1;
     }
-    return pcb_ptr->file_array[fd].file_operations_ptr->write(fd,buf,nbytes);   
+    return pcb_ptr->file_array[fd].file_operations_ptr->write(fd,buf,nbytes);
 }
 
 

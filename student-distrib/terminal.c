@@ -58,11 +58,13 @@ int terminal_read(int32_t fd, void* buf, int32_t n)
     while(termLineBuffer[termBufPos] != '\n'); //Waits until new line char is recieved
     termLineBuffer[termBufPos] = 0x00;
     int i;
+    cli();
     for(i=0;i<n;i++)
     {
         ((char*)buf)[i] = termLineBuffer[i]; //Copies keyboard buffer to buf
     }
     clear_termBuf();
+    sti();
     return n;
 }
 /*
