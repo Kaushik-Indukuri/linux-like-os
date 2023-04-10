@@ -68,7 +68,7 @@ void keyboard_ir_handler()
     }
     if(keystroke==0x26 && ctrlFlag) //0x26 = keycode for L
     {
-        terminal_open();
+        terminal_open(NULL);
     }
     else if(keystroke==0x0E && strlen(keyboardBuffer) > 0) //0x0E = keycode for backspace
     {

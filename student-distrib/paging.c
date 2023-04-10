@@ -57,10 +57,10 @@ void page_init()
             page_directory[i].res = 1;
             page_directory[i].ps = 1;
             // Set directory to point to table 
-            page_directory[i].addrshort = 1; //Offset by 10 bc you only want 10 MSB
+            page_directory[i].addrlong = 1 << 10; //Offset by 10 bc you only want 10 MSB
         }
         // user 4mb page
-        else if (i == 2) {
+        else if (i == 32) {
             page_directory[i].p = 1;
             page_directory[i].rw = 1;
             page_directory[i].us = 0;
@@ -72,7 +72,7 @@ void page_init()
             page_directory[i].res = 1;
             page_directory[i].ps = 1;
             // Set directory to point to table 
-            page_directory[i].addrshort = 1 << 1; //Offset by 10 bc you only want 10 MSB
+            //page_directory[i].addrshort = 1 << 1; //Offset by 10 bc you only want 10 MSB
         }
         else {
             page_directory[i].p = 0;

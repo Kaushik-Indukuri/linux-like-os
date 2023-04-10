@@ -14,7 +14,7 @@
 
 # Below, a linkage has been created with every exception and its associated idt num
 
-EXCEPT_LINK(syscall, syscall_vecnum);
+# EXCEPT_LINK(syscall, syscall_vecnum);
 
 EXCEPT_LINK(division_error, 0);
 EXCEPT_LINK(debug, 1);

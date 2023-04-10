@@ -1,7 +1,7 @@
 #include "file_system.h"
+#include "syscall.h"
 
-file_descriptor_t pcb[8];
-int curr_pcb_index = MINARRLEN;
+extern pcb_t *pcb_ptr;
 
 /*
  * filesystem_init
@@ -25,7 +25,7 @@ void filesystem_init(uint32_t * ptr) {
  *   SIDE EFFECTS: 
  */
 int32_t directory_open(const uint8_t* filename) {
-    read_dentry_by_name (filename, &dir_dentry);    // open directrory and put in global dentry
+    //read_dentry_by_name (filename, &dir_dentry);    // open directrory and put in global dentry
     return  0;
 }
 
@@ -87,9 +87,6 @@ int32_t directory_write(int32_t fd, const void* buf, int32_t nbytes) {
  *   SIDE EFFECTS: 
  */
 int32_t file_open(const uint8_t* filename) {
-    if (curr_pcb_index == MAXARRLEN) {  // error check for filaname length and file array
-        return -1;
-    }
     if (filename == NULL) {
         return -1;
     }
@@ -113,10 +110,6 @@ int32_t file_open(const uint8_t* filename) {
  */
 
 int32_t file_close(int32_t fd) {
-    if (curr_pcb_index == MINARRLEN) {  // check if filename is null and remove fd
-        return -1;
-    }
-    curr_pcb_index--;
     return 0;
 }
 
@@ -132,9 +125,9 @@ int32_t file_read(int32_t fd, void* buf, int32_t nbytes) {
     if (buf == NULL) {  // check buf
         return -1;
     }
-    int inode = pcb[fd].inode;
+    int inode = pcb_ptr->file_array[fd].inode;
     int ret = read_data(inode, 0, buf, nbytes); // take data with associated filename
-    pcb[fd].file_position += ret;   // update file pos
+    pcb_ptr->file_array[fd].file_position += ret;   // update file pos
     return ret;
 }
 

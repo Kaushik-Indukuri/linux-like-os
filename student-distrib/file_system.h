@@ -1,5 +1,7 @@
-
+#ifndef FS_H
+#define FS_H
 #include "lib.h"
+
 
 #define FILENAME_LEN 32 //max len of line
 #define DATABLK_LEN 4096 //max len of data block
@@ -27,14 +29,6 @@ typedef struct inode {
     int32_t data_block_num[1023];
 } inode_t;
 
-typedef struct file_descriptor {
-    int32_t file_operations_table_ptr;
-    int32_t inode;
-    int32_t file_position;
-    int32_t flags;
-} file_descriptor_t;
-
-
 boot_block_t * boot_block_ptr;
 int fp;
 dentry_t dir_dentry;
@@ -55,3 +49,4 @@ int32_t read_dentry_by_name (const uint8_t* fname, dentry_t* dentry);
 int32_t read_dentry_by_index (uint32_t index, dentry_t* dentry);
 int32_t read_data (uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length);
 
+#endif

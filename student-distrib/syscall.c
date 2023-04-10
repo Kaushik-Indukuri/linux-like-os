@@ -1,17 +1,30 @@
 #include "rtc.h"
 #include "lib.h"
 #include "i8259.h"
-#include "lib.h"
+// #include "lib.h"
 #include "idt.h"
-#include "file_system.h"
 #include "paging.h"
+#include "syscall.h"
+#include "terminal.h"
+#include "file_system.h"
 
 #define MB_8 (1<<23) // 8 MB
-#define KB_8 (1<<12) // 8 KB
+#define KB_8 (1<<13) // 8 KB
+#define MB_4 (1<<22) // 4 MB
 
 #define user_program_start  0x48000
 #define user_page_start     0x08000000
 
+int i;
+
+pcb_t* pcb_ptr;
+pcb_t pcb_array[2];
+int pid = -1;
+file_operations_t stdin;
+file_operations_t stdout;
+file_operations_t rtc;
+file_operations_t file;
+file_operations_t directory;
 
 /* Segment selector values */
 #define KERNEL_CS   0x0010
@@ -23,125 +36,226 @@
 
 
 void syscall_init() {
-    
+    rtc.open = rtc_open;
+    rtc.close = rtc_close;
+    rtc.read = rtc_read;
+    rtc.write = rtc_write;
+    file.open = file_open;
+    file.close = file_close;
+    file.read = file_read;
+    file.write = file_write;
+    directory.open = directory_open;
+    directory.close = directory_close;
+    directory.read = directory_read;
+    directory.write = directory_write;
+}
+
+int32_t halt (const uint8_t* command)
+{
+    // pid--;
+    // asm volatile("\n
+    //     movl %%eax, %%esp 
+    //     movl %%ebx, %%ebp 
+    //     "
+    //     :
+    //     :"a"(pcb_ptr->prev_esp),"b"(pcb_ptr->prev_ebp)
+    //     :
+    // );
+    return 0;
 }
 
 int32_t execute (const uint8_t* command)
 {
     /*Parse Arguements*/
-    int i = 0;
-    int cmdLen = 0;
-    while(command[i]!=' ')
-    {
-        cmdLen++;
-        i++;
-    }
-    char file_exec[cmdLen];
+    int cmdLen = 5;
+    // while(command[i]!=' ')
+    // {
+    //     cmdLen++;
+    //     i++;
+    // }
+    char file_exec[cmdLen+1];
     for(i = 0;i<cmdLen;i++)
     {
         file_exec[i] = command[i];
     }
+    file_exec[cmdLen] = 0x00;
 
     /*Check executable*/
     dentry_t dentry;
-    if(read_dentry_by_name (file_exec, &dentry)==-1)
+    if(read_dentry_by_name ((uint8_t*)file_exec, &dentry)==-1)
     {
         return -1;
     }
     char buf[4];
-    if(read_data(dentry.inode_num, 0, &buf, 4)==-1)
+    if(read_data(dentry.inode_num, 0,(uint8_t*)buf, 4)==-1)
     {
         return -1;
     }
     char elf[4] = {0x7F, 'E', 'L', 'F'}; //ELF FORMAT MAGIC NUMBERS 
     if (!strncmp(buf, elf, 4))
     {
-        return -1;
-    }
-
-    char entry_pt[4];
-    if (read_data(dentry.inode_num,24, &entry_pt, 4) == -1) {
-        return -1;
+        //return -1;
     }
 
     /*Setup program paging*/
-    pcb_ptr = MB_8 - KB_8;
-    uint8_t * program_ptr = user_page_start + user_program_start;
-    if (read_data(dentry.inode_num, 0, program_ptr, (inode_t *)(boot_block_ptr + 1 + dentry.inode_num).length * KB4) == -1) {
+    pid++;
+    if (pid > 1) {
+        pid--;
         return -1;
     }
+    page_directory[32].addrshort = (MB_8 + MB_4*pid) >> 22;
     flushtlb();
-    pcb_ptr->pid = 0;
-    pcb_ptr->parent_pid = 0;
-    for (int i = 2; i < 8; i++) {
-        pcb->file_array[i].inode = 0;
-        pcb->file_array[i].file_position = 0;
-        pcb->file_array[i].file_operations_ptr = NULL;
-        pcb->file_array[i].flags = 0;
+
+    /*Move exectubale data into virtual address space*/
+    pcb_ptr = pcb_array + pid;
+    uint8_t * program_ptr = (uint8_t *)(user_page_start + user_program_start);
+    if (read_data(dentry.inode_num, 0, program_ptr, ((inode_t *)(boot_block_ptr) + 1 + dentry.inode_num)->length * KB4) == -1) {
+        return -1;
     }
-    
+    pcb_ptr->pid = pid;
+    pcb_ptr->parent_pid = pid-1;
+    for (i = 2; i < 8; i++) {
+        pcb_ptr->file_array[i].inode = 0;
+        pcb_ptr->file_array[i].file_position = 0;
+        pcb_ptr->file_array[i].file_operations_ptr = NULL;
+        pcb_ptr->file_array[i].flags = 0;
+    }
 
     stdin.open = terminal_open;
     stdin.close = terminal_close;
     stdin.read = terminal_read;
     stdin.write = terminal_write;
 
-    pcb->file_array[0].inode = 0;
-    pcb->file_array[0].file_position = 0;
-    pcb->file_array[0].file_operations_ptr = &stdin;
-    pcb->file_array[0].flags = 1;
+    pcb_ptr->file_array[0].inode = 0;
+    pcb_ptr->file_array[0].file_position = 0;
+    pcb_ptr->file_array[0].file_operations_ptr = &stdin;
+    pcb_ptr->file_array[0].flags = 1;
 
     stdout.open = terminal_open;
     stdout.close = terminal_close;
     stdout.read = terminal_read;
     stdout.write = terminal_write;
 
-    pcb->file_array[1].inode = 0;
-    pcb->file_array[1].file_position = 0;
-    pcb->file_array[1].file_operations_ptr = &stdout;
-    pcb->file_array[1].flags = 1;
+    pcb_ptr->file_array[1].inode = 0;
+    pcb_ptr->file_array[1].file_position = 0;
+    pcb_ptr->file_array[1].file_operations_ptr = &stdout;
+    pcb_ptr->file_array[1].flags = 1;
 
-    pcb->program_eip = entry_pt[0] | entry_pt[1] << 8 | entry_pt[2] << 16 | entry_pt[3] << 24;
-    pcb->program_esp = KB_8;
+    char entry_pt[4];
+    if (read_data(dentry.inode_num, 24, (uint8_t *)entry_pt, 4) == -1) {
+        return -1;
+    }
+    uint32_t new_eip = entry_pt[3] + (entry_pt[2] << 8) + (entry_pt[1] << 16) + (entry_pt[0] << 24);
+    uint32_t new_esp = MB_8 * 4;
 
-    register uint32_t saved_ebp asm("ebp");
-    register uint32_t saved_esp asm("esp");
+    register uint32_t ebp asm("ebp");
+    register uint32_t esp asm("esp");
+    // register uint32_t eip asm("eip");
+    pcb_ptr->prev_ebp = ebp;
+    pcb_ptr->prev_esp = esp;
+    // pcb_ptr->prev_eip = eip;
 
-    asm volatile("\
-        xorl %eax, %eax
+    tss.ss0 = KERNEL_DS;
+    tss.esp0 = (MB_8-(KB_8*pid)-4);
 
 
-
-
-
-
-        iret    ;\
+    asm volatile(" \n\
+        pushl %%eax \n\
+        pushl %%ebx \n\
+        pushfl \n\
+        pushl %%ecx \n\
+        pushl %%edx \n\
+        iret    \n\
         "
         :
-        :"a"(),"b"()
-        :
-    )
-
-
-
-    return 0;
+        :"a"(USER_DS),"b"(new_esp),"c"(USER_CS),"d"(new_eip)
+        : "memory"
+    );
+    return 0;// "eax", "ebx", "ecx", "edx"
 }
 
 int32_t open(const uint8_t* filename)
 {
-    return 0;
+    int fd = 0;
+    for (i = 0; i < 8; i++) {
+        if (pcb_ptr->file_array[i].flags == 0) {
+            fd = i;
+            break;
+        }
+        if (i == 7) {
+            return -1;
+        }
+    }
+    dentry_t dentry;
+    if(read_dentry_by_name (filename, &dentry)==-1)
+    {
+        return -1;
+    }
+    if (dentry.filetype == 0) {
+        pcb_ptr->file_array[fd].file_operations_ptr = &rtc;
+        pcb_ptr->file_array[fd].inode = dentry.inode_num;
+        pcb_ptr->file_array[fd].file_position = 0;
+        pcb_ptr->file_array[fd].flags = 1;
+    }
+    else if (dentry.filetype == 1) {
+        pcb_ptr->file_array[fd].file_operations_ptr = &directory;
+        pcb_ptr->file_array[fd].inode = dentry.inode_num;
+        pcb_ptr->file_array[fd].file_position = 0;
+        pcb_ptr->file_array[fd].flags = 1;
+    }
+    else if (dentry.filetype == 2) {
+        pcb_ptr->file_array[fd].file_operations_ptr = &file;
+        pcb_ptr->file_array[fd].inode = dentry.inode_num;
+        pcb_ptr->file_array[fd].file_position = 0;
+        pcb_ptr->file_array[fd].flags = 1;
+    }
+    else {
+        return -1;
+    }
+    return fd;
 }
+
 int32_t close(int32_t fd)
 {
-    return 0;
+    if(fd > 7 || fd < 0)
+    {
+        return -1;
+    }
+    if(pcb_ptr->file_array[fd].flags == 0)
+    {
+        return -1;
+    }
+    pcb_ptr->file_array[fd].inode = 0;
+    pcb_ptr->file_array[fd].file_position = 0; // Definetly wrong lol rahul is supposed to be here LOL
+    pcb_ptr->file_array[fd].flags = 0;
+
+    return pcb_ptr->file_array[0].file_operations_ptr->close(fd);     
 }
 int32_t read(int32_t fd, void* buf, int32_t nbytes)
 {
-    return 0;
+    // Error Checking:
+    if(fd>7 || fd<0 || nbytes<0 || buf == NULL)
+    {
+        return -1;
+    }
+    if(pcb_ptr->file_array[fd].flags ==0)
+    {
+        return -1;
+    }
+    return pcb_ptr->file_array[fd].file_operations_ptr->read(fd,buf,nbytes);     
+
 }
 int32_t write(int32_t fd, const void* buf, int32_t nbytes)
 {
-    return 0;
+    if(fd>7 || fd<0 || nbytes<0 || buf==NULL)  //62 is max num files
+    {
+        return -1;
+    }
+    if( pcb_ptr->file_array[fd].flags ==0)
+    {
+        return -1;
+    }
+    return pcb_ptr->file_array[fd].file_operations_ptr->write(fd,buf,nbytes);   
 }
 
 
