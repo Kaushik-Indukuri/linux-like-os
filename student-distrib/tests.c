@@ -215,8 +215,9 @@ void rtc_test_rw()
 int file_system_test_1() {
 	TEST_HEADER;
 
-	int fd = open((uint8_t *)"frame0.txt");
+	//int fd = open((uint8_t *)"frame0.txt");
 	char buf[188];
+	//read()
 	//int ret = read(fd, buf, 187);
 	//if (ret <= 0) {
 	//	return FAIL;
@@ -315,7 +316,7 @@ int file_system_test_6() {
 	dentry_t dentry;
 	memset(buf, 0, 33);
 	for (i = 0; i < 17; i++) {
-		directory_read(i, buf, 32);
+		directory_read(0, buf, 32);
 		read_dentry_by_index (i, &dentry);
 		printf("file_name: %s, file_type: %d, file_size: %d", buf, dentry.filetype, ((inode_t *)(boot_block_ptr + 1) + dentry.inode_num)->length);
 		printf("\n");

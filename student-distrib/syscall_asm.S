@@ -20,7 +20,7 @@
     syscallerror:
         movl $-1, %eax
     return:
-        iret              
+        iret           
 
     syscalltable:
         .long 0x00000000

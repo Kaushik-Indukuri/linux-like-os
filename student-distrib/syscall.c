@@ -62,20 +62,37 @@ void syscall_init() {
     pid = -1;
 }
 
-int32_t halt (const uint8_t* command)
+int32_t halt (const uint8_t command)
 {
-    // pid--;
-    // asm volatile("\n
-    //     movl %%eax, %%esp 
-    //     movl %%ebx, %%ebp 
-    //     "
-    //     :
-    //     :"a"(pcb_ptr->prev_esp),"b"(pcb_ptr->prev_ebp)
-    //     :
-    // );
-
-
-    return 0;
+    pid--;
+    for (i = 0; i < 8; i++) {
+        pcb_ptr->file_array[i].flags = 0;
+    }
+    // if(pid == 0)
+    // {
+    //     pid = -1;
+    //     //pcb_ptr = pcb_array + pid;
+    //     execute("shell");
+    // }
+    tss.ss0 = KERNEL_DS;
+    tss.esp0 = (MB_8-(KB_8*(pid)) - 4);
+    pcb_ptr = pcb_array + pid;
+    uint32_t ebp = pcb_ptr->prev_ebp;
+    uint32_t esp = pcb_ptr->prev_esp;
+    page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / MB_4;
+    flushtlb();
+    asm volatile(" \n\
+        movl %%eax, %%ebp\n\
+        movl %%ebx, %%esp\n\
+        movl %%ecx, %%eax\n\
+        leave \n\
+        ret \n\
+        "
+        :
+        :"a"(ebp),"b"(esp),"c"(command)
+        : "memory"
+    );
+    return -1;
 }
 
 int32_t execute (const uint8_t* command)
@@ -173,18 +190,16 @@ int32_t execute (const uint8_t* command)
 
     register uint32_t ebp asm("ebp");
     register uint32_t esp asm("esp");
-    // register uint32_t eip asm("eip");
+    
     pcb_ptr->prev_ebp = ebp;
     pcb_ptr->prev_esp = esp;
-    // pcb_ptr->prev_eip = eip;
+    //pcb_ptr->prev_eip = new_eip;
 
-    // tss.ss0 = KERNEL_DS;
-    // tss.esp0 = (MB_8-(KB_8*(pid+1)));
+    tss.ss0 = KERNEL_DS;
+    tss.esp0 = (MB_8-(KB_8*(pid)) - 4);
 
     sti();
 
-    // printf("%d%s",new_eip,"\n");
-    // return 0;
 
      asm volatile(" \n\
         pushl %%eax \n\
@@ -198,8 +213,7 @@ int32_t execute (const uint8_t* command)
         :"a"(USER_DS),"b"(new_esp),"c"(USER_CS),"d"(new_eip)
         : "memory"
     );
-
-    return 0;// "eax", "ebx", "ecx", "edx"
+    return 0;
 }
 
 int32_t open(const uint8_t* filename)

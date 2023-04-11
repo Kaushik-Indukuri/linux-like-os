@@ -5,7 +5,7 @@
 void syscall_init();
 
 /*Function for executing user programs with system calls*/
-int32_t halt (const uint8_t* command);
+int32_t halt (const uint8_t command);
 int32_t execute (const uint8_t* command);
 int32_t open(const uint8_t* filename);
 int32_t close(int32_t fd);

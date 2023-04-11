@@ -50,8 +50,11 @@ int32_t directory_close(int32_t fd) {
  *   SIDE EFFECTS: 
  */
 int32_t directory_read(int32_t fd, void* buf, int32_t nbytes) {
-    int idx = fp;
-    fp++;
+    int idx = pcb_ptr->file_array[fd].file_position;
+    pcb_ptr->file_array[fd].file_position++;
+    if (pcb_ptr->file_array[fd].file_position > 15) {
+        return -1;
+    }
     int len;
     dentry_t dentry;
     read_dentry_by_index(idx, &dentry); // get index from curr file ptr
@@ -62,7 +65,7 @@ int32_t directory_read(int32_t fd, void* buf, int32_t nbytes) {
         len = strlen((int8_t *)dentry.filename);
     }
     memcpy(buf, dentry.filename, len);  // copy over filename to buf
-    return 0;
+    return len;
 }
 
 /*
@@ -152,6 +155,7 @@ int32_t file_write(int32_t fd, const void* buf, int32_t nbytes) {
  *   SIDE EFFECTS: 
  */
 int32_t read_dentry_by_name (const uint8_t* fname, dentry_t* dentry) {
+    int len = strlen((char*)fname);
     if (strlen((char*)fname) > FILENAME_LEN) {      // error check input vals
         return -1;
     }
@@ -162,7 +166,7 @@ int32_t read_dentry_by_name (const uint8_t* fname, dentry_t* dentry) {
     int i;
     for (i = 0; i < NUMFILES; i++) {
         dentry_t copy_dentry = *(dentry_ptr + i);
-        if (strncmp((int8_t*)fname, (int8_t*)(copy_dentry.filename), FILENAME_LEN) == 0) {  // check if curr dentry matches filename
+        if (strncmp((int8_t*)fname, (int8_t*)(copy_dentry.filename), len) == 0) {  // check if curr dentry matches filename
             strncpy(dentry->filename, copy_dentry.filename, FILENAME_LEN);  // if it does copy found dentry to user dentry
             dentry->filetype = copy_dentry.filetype;
             dentry->inode_num = copy_dentry.inode_num;
