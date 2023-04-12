@@ -53,7 +53,7 @@ int32_t directory_read(int32_t fd, void* buf, int32_t nbytes) {
     int idx = pcb_ptr->file_array[fd].file_position;
     pcb_ptr->file_array[fd].file_position++;
     if (pcb_ptr->file_array[fd].file_position > 15) {
-        return -1;
+        return 0;
     }
     int len;
     dentry_t dentry;

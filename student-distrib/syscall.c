@@ -15,7 +15,7 @@
 #define user_program_start  0x48000
 #define user_page_start     0x08000000
 
-int i;
+
 
 pcb_t* pcb_ptr;
 pcb_t pcb_array[2];
@@ -64,32 +64,69 @@ void syscall_init() {
 
 int32_t halt (const uint8_t command)
 {
-    pid--;
-    for (i = 0; i < 8; i++) {
-        pcb_ptr->file_array[i].flags = 0;
-    }
-    // if(pid == 0)
+    // uint32_t ret;
+    // ret = (uint32_t)command;
+    // int i;
+    // for (i = 0; i < 8; i++) {
+    //     pcb_ptr->file_array[i].flags = 0;
+    // }
+    // if(pid <= 0)
     // {
     //     pid = -1;
     //     //pcb_ptr = pcb_array + pid;
     //     execute("shell");
     // }
+    // pid--;
+    // tss.ss0 = KERNEL_DS;
+    // tss.esp0 = (MB_8-(KB_8*(pid)) - 4);
+    // pcb_ptr = pcb_array + pid + 1;
+    // uint32_t ebp = pcb_ptr->prev_ebp;
+    // uint32_t esp = pcb_ptr->prev_esp;
+    // page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / KB4;
+    // flushtlb();
+    // asm volatile(" \n\
+    //     movl %%eax, %%ebp\n\
+    //     movl %%ebx, %%esp\n\
+    //     movl %%ecx, %%eax\n\
+    //     leave \n\
+    //     ret \n\
+    //     "
+    //     :
+    //     :"a"(ebp),"b"(esp),"c"(ret)
+    //     : "memory"
+    // );
+    // return -1;
+
+    uint32_t ret;
+    ret = (uint32_t)command;
+    int i;
+    for (i = 0; i < 8; i++) {
+        pcb_ptr->file_array[i].flags = 0;
+    }
+    if(pid <= 0)
+    {
+        pid = -1;
+        //pcb_ptr = pcb_array + pid;
+        execute("shell");
+        return command;
+    }
+    pid--;
     tss.ss0 = KERNEL_DS;
     tss.esp0 = (MB_8-(KB_8*(pid)) - 4);
-    pcb_ptr = pcb_array + pid;
+    pcb_ptr = pcb_array + pid + 1;
     uint32_t ebp = pcb_ptr->prev_ebp;
     uint32_t esp = pcb_ptr->prev_esp;
-    page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / MB_4;
+    page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / KB4;
     flushtlb();
     asm volatile(" \n\
         movl %%eax, %%ebp\n\
         movl %%ebx, %%esp\n\
         movl %%ecx, %%eax\n\
-        leave \n\
+        leave\n\
         ret \n\
         "
         :
-        :"a"(ebp),"b"(esp),"c"(command)
+        :"a"(ebp),"b"(esp),"c"(ret)
         : "memory"
     );
     return -1;
@@ -99,6 +136,7 @@ int32_t execute (const uint8_t* command)
 {
     /*Parse Arguements*/
     int cmdLen = 0;
+    int i = 0;
     while(command[i]!=0x00)
     {
         cmdLen++;
@@ -137,7 +175,7 @@ int32_t execute (const uint8_t* command)
         pid--;
         return -1;
     }
-    page_directory[32].addrlong = (MB_8 + MB_4*pid) / MB_4;
+    page_directory[32].addrlong = (MB_8 + MB_4*pid) / KB4;
 
     flushtlb();
 
@@ -187,7 +225,6 @@ int32_t execute (const uint8_t* command)
 
     uint32_t new_eip = entry_pt[0] + (entry_pt[1] << 8) + (entry_pt[2] << 16) + (entry_pt[3] << 24);
     uint32_t new_esp = (MB_4 * 33) - 4;
-
     register uint32_t ebp asm("ebp");
     register uint32_t esp asm("esp");
     
@@ -219,6 +256,7 @@ int32_t execute (const uint8_t* command)
 int32_t open(const uint8_t* filename)
 {
     int fd = 0;
+    int i;
     for (i = 0; i < 8; i++) {
         if (pcb_ptr->file_array[i].flags == 0) {
             fd = i;

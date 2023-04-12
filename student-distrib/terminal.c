@@ -120,7 +120,7 @@ int terminal_write(int32_t fd, const void* buf, int32_t n)
         }
         update_cursor(screen_x,screen_y);
     }
-    return n; //Returns number of chars writted
+    return n; //Returns number of chars written
 }
 /*
  * update_cursor
