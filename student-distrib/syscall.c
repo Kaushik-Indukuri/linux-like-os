@@ -135,17 +135,22 @@ int32_t halt (const uint8_t command)
 int32_t execute (const uint8_t* command)
 {
     /*Parse Arguements*/
-    int cmdLen = 0;
+    int space = 0;
     int i = 0;
-    while(command[i]!=0x00)
+    int cmdLen = 0;
+    while(command[space]== ' ')
+    {
+        space++;
+    }
+    while(command[i + space]!=0x00 && command[i + space]!= ' ')
     {
         cmdLen++;
         i++;
     }
     char file_exec[cmdLen+1];
-    for(i = 0;i<cmdLen;i++)
-    {
-        file_exec[i] = command[i];
+    for(i = space; i < cmdLen + space;i++)
+    { 
+        file_exec[i-space] = command[i];
     }
     file_exec[cmdLen] = '\0';
  
