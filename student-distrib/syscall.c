@@ -15,7 +15,9 @@
 #define user_program_start  0x48000
 #define user_page_start     0x08000000
 
-
+#define USRSTARTADDR 0x08000000
+#define USRENDADDR   0x80480000
+#define tableI 0xb8 // location of only table initalized
 
 pcb_t* pcb_ptr;
 pcb_t pcb_array[2];
@@ -25,6 +27,8 @@ file_operations_t stdout;
 file_operations_t rtc;
 file_operations_t file;
 file_operations_t directory;
+
+char arg[32];
 
 /* Segment selector values */
 #define KERNEL_CS   0x0010
@@ -161,6 +165,7 @@ int32_t execute (const uint8_t* command)
     int space = 0;
     int i = 0;
     int cmdLen = 0;
+    int argLen=0;
     while(command[space]== ' ')
     {
         space++;
@@ -175,8 +180,22 @@ int32_t execute (const uint8_t* command)
     { 
         file_exec[i-space] = command[i];
     }
+
+    for(i = space + cmdLen; command[i] != '\0' ;i++)
+    {
+        if(command[i]!=' ')
+        {
+            arg[argLen]=command[i];
+            argLen++;
+        }
+        else{
+            break;
+        }
+    }
+
     file_exec[cmdLen] = '\0';
  
+
     /*Check executable*/
     dentry_t dentry;
     if(read_dentry_by_name((uint8_t*)file_exec, &dentry)==-1)
@@ -436,13 +455,59 @@ int32_t null_write(int32_t fd, const void* buf, int32_t nbytes)
     return -1;
 }
 
+/*
+ * getargs
+ *   DESCRIPTION: Arguments are parsed from the command buffer in execute
+ *   INPUTS: void* buf: copy from  file name into buffer into, int32_t nbytes  num bytes modified
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if fail, 0 if success
+ *   SIDE EFFECTS: none
+ */
+int32_t getargs (uint8_t* buf, int32_t nbytes)
+{
+    if(buf==NULL || nbytes<0)
+    {
+        return -1;
+    }
+    pcb_t* temp;
+    temp= (pcb_t*)(MB_8-(KB_8*(pid)) - 4); //This addr is same we used to get execute addr, but no PID so?
+    if(temp==NULL)
+    {
+        return -1;
+    }
+    strcpy((char*)buf, arg );
+    return 0;
+}
 
-// int32_t video_mapping(uint32_t ** pageDirAddr)
-// {
-//     if(pageDirAddr==NULL || uint32_t(pageDirAddr) < user_st_addr || uint32_t(pageDirAddr) > user_end_addr)
-//     {
-//         return -1;
-//     }
+/*
+ * vidmap
+ *   DESCRIPTION: ?????????
+ *   INPUTS: uint8_t** screen_start: double pointer to mem accessed
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if fail, 0 if success
+ *   SIDE EFFECTS: none
+ */
+int32_t vidmap (uint8_t** screen_start)
+{
+    if(screen_start==NULL || (uint32_t)screen_start < USRSTARTADDR || (uint32_t)screen_start> USRENDADDR)
+    {
+        return -1;
+    }
 
-//     return 0;
-// }
+    page_directory[34].ps=0;
+    page_directory[34].p=1;
+    page_directory[34].us=0;        
+    page_directory[34].addrlong= (int)(video_mapping)/KB4;
+
+    video_mapping[0].p=1;
+    video_mapping[0].us=1;    
+    video_mapping[0].addr=tableI;
+    flushtlb();
+    // How / Why modify screen start
+    // uint32_t* ofset=((MB_8 + KB4*2)); // 2nd KB assigned, this is 2nd
+    // *screen_start =(uint32_t*) ((MB_8 + KB4*2)); //How do I calculate offset for mem that screen start has
+    *screen_start =(uint32_t*) (0x8800000); //How do I calculate offset for mem that screen start has
+    return 0;
+
+}
+

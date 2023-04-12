@@ -14,6 +14,9 @@ int32_t write(int32_t fd, const void* buf, int32_t nbytes);
 int32_t null_read(int32_t fd, void* buf, int32_t nbytes);
 int32_t null_write(int32_t fd, const void* buf, int32_t nbytes);
 
+int32_t getargs (uint8_t* buf, int32_t nbytes);
+int32_t vidmap (uint8_t** screen_start);
+
 typedef struct file_operations {
     int32_t (*open) (const uint8_t* filename);
     int32_t (*close) (int32_t fd);

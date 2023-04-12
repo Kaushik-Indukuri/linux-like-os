@@ -74,6 +74,20 @@ void page_init()
             // Set directory to point to table 
             //page_directory[i].addrshort = 1 << 1; //Offset by 10 bc you only want 10 MSB
         }
+        else if (i == 34) {
+            page_directory[i].p = 0;
+            page_directory[i].rw = 1;
+            page_directory[i].us = 1;
+            page_directory[i].pwt = 0;
+            page_directory[i].pcd = 0;
+            page_directory[i].a = 0;
+            page_directory[i].d = 0;
+            page_directory[i].g = 0;
+            page_directory[i].res = 1;
+            page_directory[i].ps = 1;
+            // Set directory to point to vid mem 
+            //page_directory[i].addrshort = 1 << 1; //Offset by 10 bc you only want 10 MSB
+        }
         else {
             page_directory[i].p = 0;
             page_directory[i].rw = 1;
