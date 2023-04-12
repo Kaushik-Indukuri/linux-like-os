@@ -18,7 +18,7 @@ int termBufPos;
  *   SIDE EFFECTS: Open terminal for input
  */
  
-int terminal_open()
+int terminal_open(const uint8_t* filename)
 {
     clear();
     screen_x = 0;
@@ -37,7 +37,7 @@ int terminal_open()
  *   RETURN VALUE: 0 if success
  *   SIDE EFFECTS: Closes terminal for input
  */
-int terminal_close()
+int terminal_close(int32_t fd)
 {
     update_cursor(screen_x,screen_y);
     clear_termBuf();
@@ -52,16 +52,19 @@ int terminal_close()
  *   RETURN VALUE: num bytes read
  *   SIDE EFFECTS: none
  */
-int terminal_read(int32_t fd,char* buf,int n)
+int terminal_read(int32_t fd, void* buf, int32_t n)
 {
+    //char * buf2 = (char *)buf;
     while(termLineBuffer[termBufPos] != '\n'); //Waits until new line char is recieved
     termLineBuffer[termBufPos] = 0x00;
     int i;
+    cli();
     for(i=0;i<n;i++)
     {
-        buf[i] = termLineBuffer[i]; //Copies keyboard buffer to buf
+        ((char*)buf)[i] = termLineBuffer[i]; //Copies keyboard buffer to buf
     }
     clear_termBuf();
+    sti();
     return n;
 }
 /*
@@ -72,22 +75,22 @@ int terminal_read(int32_t fd,char* buf,int n)
  *   RETURN VALUE: num bytes written
  *   SIDE EFFECTS: none
  */
-int terminal_write(int32_t fd,char* buf,int n)
+int terminal_write(int32_t fd, const void* buf, int32_t n)
 {
     int i;
     for(i = 0;i<n;i++) //Writes all chars to terminal
     {
-        if(buf[i] != 0x00)
+        if(((char*)buf)[i] != 0x00)
         {
             if(screen_x == (screenWidth-1)) //goes to newline if char is at the end
             {
-                if(buf[i] == '\t')
+                if( ((char*)buf)[i] == '\t')
                 {
                     terminal_write(2,"    ",4); //Prints 4 spaces for tab
                 }
                 else
                 {
-                    putc(buf[i]);
+                    putc( ((char*)buf)[i]);
                 }
                 screen_y++;
                 if(screen_y == screenHeight)
@@ -100,13 +103,13 @@ int terminal_write(int32_t fd,char* buf,int n)
             }
             else
             {
-                if(buf[i] == '\t')
+                if( ((char*)buf)[i] == '\t')
                 {
                     terminal_write(2,"    ",4); //Prints 4 spaces for tab
                 }
                 else
                 {
-                    putc(buf[i]);
+                    putc( ((char*)buf)[i]);
                 }
                 if(screen_y == screenHeight)
                 {
@@ -117,7 +120,7 @@ int terminal_write(int32_t fd,char* buf,int n)
         }
         update_cursor(screen_x,screen_y);
     }
-    return n; //Returns number of chars writted
+    return n; //Returns number of chars written
 }
 /*
  * update_cursor

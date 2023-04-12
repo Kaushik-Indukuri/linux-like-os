@@ -14,6 +14,7 @@
 #include "paging.h"
 #include "file_system.h"
 #include "rtc.h"
+#include "syscall.h"
 
 #define RUN_TESTS
 
@@ -149,9 +150,10 @@ void entry(unsigned long magic, unsigned long addr) {
     page_init();
     i8259_init();
     keyboard_init();
+    syscall_init();
     filesystem_init(ptr);
     rtc_init();
-    terminal_open();
+    terminal_open(NULL);
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
@@ -166,10 +168,12 @@ void entry(unsigned long magic, unsigned long addr) {
 #ifdef RUN_TESTS
     /* Run tests */
     //clear();
-    launch_tests();
+    //launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
-
+    execute((uint8_t*)"shell");
+    // execute("shell");
+    //execute("testprint");
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");
 }

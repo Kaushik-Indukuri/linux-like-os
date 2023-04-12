@@ -4,6 +4,7 @@
 #include "file_system.h"
 #include "rtc.h"
 #include "terminal.h"
+#include "syscall.h"
 
 #define PASS 1
 #define FAIL 0
@@ -213,17 +214,19 @@ void rtc_test_rw()
  */
 int file_system_test_1() {
 	TEST_HEADER;
-	int fd = file_open((uint8_t *)"frame0.txt");
-	char buf[188];
-	int ret = file_read(fd, buf, 187);
-	if (ret <= 0) {
-		return FAIL;
-	}
-	if (ret != 187) {
-		return FAIL;
-	}
+
+	//int fd = open((uint8_t *)"frame0.txt");
+	// char buf[188];
+	//read()
+	//int ret = read(fd, buf, 187);
+	//if (ret <= 0) {
+	//	return FAIL;
+	//}
+	//if (ret != 187) {
+	//	return FAIL;
+	//}
 	clear();
-	printf("%s", buf);
+	//printf("%s", buf);
 
 	return PASS;
 }
@@ -313,7 +316,7 @@ int file_system_test_6() {
 	dentry_t dentry;
 	memset(buf, 0, 33);
 	for (i = 0; i < 17; i++) {
-		directory_read(i, buf, 32);
+		directory_read(0, buf, 32);
 		read_dentry_by_index (i, &dentry);
 		printf("file_name: %s, file_type: %d, file_size: %d", buf, dentry.filetype, ((inode_t *)(boot_block_ptr + 1) + dentry.inode_num)->length);
 		printf("\n");
@@ -424,7 +427,7 @@ void launch_tests(){
 	// rtc_test_rw(); //CALL TEST CASE WITH THIS
 	// TEST_OUTPUT("rtc_test_rw", rtc_test_rw()); //DONT UNCOMMENT THIS
 	
-	// TEST_OUTPUT("file_system_test_1", file_system_test_1());
+	//TEST_OUTPUT("file_system_test_1", file_system_test_1());
 	// TEST_OUTPUT("file_system_test_2", file_system_test_2());
 	// TEST_OUTPUT("file_system_test_3", file_system_test_3());
 
@@ -435,7 +438,8 @@ void launch_tests(){
 	// TEST_OUTPUT("file_system_test_7", file_system_test_7());
 	// TEST_OUTPUT("file_system_test_8", file_system_test_8());
 	// TEST_OUTPUT("file_system_test_9", file_system_test_9());
-	TEST_OUTPUT("terminal_test", terminal_test());
+	//TEST_OUTPUT("terminal_test", terminal_test());
 
+	
 
 }

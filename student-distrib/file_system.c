@@ -1,7 +1,7 @@
 #include "file_system.h"
+#include "syscall.h"
 
-file_descriptor_t pcb[8];
-int curr_pcb_index = MINARRLEN;
+extern pcb_t *pcb_ptr;
 
 /*
  * filesystem_init
@@ -25,7 +25,7 @@ void filesystem_init(uint32_t * ptr) {
  *   SIDE EFFECTS: 
  */
 int32_t directory_open(const uint8_t* filename) {
-    read_dentry_by_name (filename, &dir_dentry);    // open directrory and put in global dentry
+    //read_dentry_by_name (filename, &dir_dentry);    // open directrory and put in global dentry
     return  0;
 }
 
@@ -50,8 +50,11 @@ int32_t directory_close(int32_t fd) {
  *   SIDE EFFECTS: 
  */
 int32_t directory_read(int32_t fd, void* buf, int32_t nbytes) {
-    int idx = fp;
-    fp++;
+    int idx = pcb_ptr->file_array[fd].file_position;
+    pcb_ptr->file_array[fd].file_position++;
+    if (pcb_ptr->file_array[fd].file_position > 17) { // 17 total files
+        return 0;
+    }
     int len;
     dentry_t dentry;
     read_dentry_by_index(idx, &dentry); // get index from curr file ptr
@@ -62,7 +65,7 @@ int32_t directory_read(int32_t fd, void* buf, int32_t nbytes) {
         len = strlen((int8_t *)dentry.filename);
     }
     memcpy(buf, dentry.filename, len);  // copy over filename to buf
-    return 0;
+    return len;
 }
 
 /*
@@ -87,9 +90,6 @@ int32_t directory_write(int32_t fd, const void* buf, int32_t nbytes) {
  *   SIDE EFFECTS: 
  */
 int32_t file_open(const uint8_t* filename) {
-    if (curr_pcb_index == MAXARRLEN) {  // error check for filaname length and file array
-        return -1;
-    }
     if (filename == NULL) {
         return -1;
     }
@@ -100,12 +100,7 @@ int32_t file_open(const uint8_t* filename) {
     if (read_dentry_by_name(filename, &dentry) != 0) {  // get dentry with associated filename
         return -1;
     }
-    file_descriptor_t fd;   // copy over dentry to user ptr
-    fd.inode = dentry.inode_num;
-    fd.file_position = 0;
-    pcb[curr_pcb_index] = fd;
-    curr_pcb_index++;
-    return curr_pcb_index - 1;  // return index in file array
+    return 0;  // return index in file array
 }
 
 /*
@@ -118,10 +113,6 @@ int32_t file_open(const uint8_t* filename) {
  */
 
 int32_t file_close(int32_t fd) {
-    if (curr_pcb_index == MINARRLEN) {  // check if filename is null and remove fd
-        return -1;
-    }
-    curr_pcb_index--;
     return 0;
 }
 
@@ -137,9 +128,9 @@ int32_t file_read(int32_t fd, void* buf, int32_t nbytes) {
     if (buf == NULL) {  // check buf
         return -1;
     }
-    int inode = pcb[fd].inode;
+    int inode = pcb_ptr->file_array[fd].inode;
     int ret = read_data(inode, 0, buf, nbytes); // take data with associated filename
-    pcb[fd].file_position += ret;   // update file pos
+    pcb_ptr->file_array[fd].file_position += ret;   // update file pos
     return ret;
 }
 
@@ -164,7 +155,11 @@ int32_t file_write(int32_t fd, const void* buf, int32_t nbytes) {
  *   SIDE EFFECTS: 
  */
 int32_t read_dentry_by_name (const uint8_t* fname, dentry_t* dentry) {
+    int len = strlen((char*)fname);
     if (strlen((char*)fname) > FILENAME_LEN) {      // error check input vals
+        return -1;
+    }
+    if (strlen((char*)fname) == 0) {      // error check input vals
         return -1;
     }
     if (dentry == NULL) {
@@ -175,7 +170,7 @@ int32_t read_dentry_by_name (const uint8_t* fname, dentry_t* dentry) {
     for (i = 0; i < NUMFILES; i++) {
         dentry_t copy_dentry = *(dentry_ptr + i);
         if (strncmp((int8_t*)fname, (int8_t*)(copy_dentry.filename), FILENAME_LEN) == 0) {  // check if curr dentry matches filename
-            strncpy(dentry->filename, copy_dentry.filename, FILENAME_LEN);  // if it does copy found dentry to user dentry
+            strncpy(dentry->filename, copy_dentry.filename, len);  // if it does copy found dentry to user dentry
             dentry->filetype = copy_dentry.filetype;
             dentry->inode_num = copy_dentry.inode_num;
             return 0;

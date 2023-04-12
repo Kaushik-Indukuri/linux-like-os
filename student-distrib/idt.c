@@ -4,6 +4,7 @@
 #include "x86_desc.h"
 #include "keyboard_linkage.h"
 #include "rtc_linkage.h"
+#include "syscall.h"
 char exception_strings[numExceptions+1][30] = {
     "Division Error",
     "Debug",
@@ -118,7 +119,7 @@ void exception_idt(int32_t num) {
     else {
         printf("%s", exception_strings[num]); //Print respective string for each exception
     }
-    while(1){
-    
-    }
+    //while(1){
+    halt(0);
+    //}
 }
