@@ -11,6 +11,8 @@ int32_t open(const uint8_t* filename);
 int32_t close(int32_t fd);
 int32_t read(int32_t fd, void* buf, int32_t nbytes);
 int32_t write(int32_t fd, const void* buf, int32_t nbytes);
+int32_t null_read(int32_t fd, void* buf, int32_t nbytes);
+int32_t null_write(int32_t fd, const void* buf, int32_t nbytes);
 
 typedef struct file_operations {
     int32_t (*open) (const uint8_t* filename);
@@ -34,7 +36,7 @@ typedef struct pcb{
     uint32_t prev_esp;
     uint32_t prev_eip;
     uint32_t cur_ebp;
-    file_descriptor_t file_array[8];
+    file_descriptor_t file_array[8]; // 8 locations in file array
 } pcb_t;
 
 

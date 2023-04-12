@@ -216,7 +216,7 @@ int file_system_test_1() {
 	TEST_HEADER;
 
 	//int fd = open((uint8_t *)"frame0.txt");
-	char buf[188];
+	// char buf[188];
 	//read()
 	//int ret = read(fd, buf, 187);
 	//if (ret <= 0) {

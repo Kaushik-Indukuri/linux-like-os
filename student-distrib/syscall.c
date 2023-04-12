@@ -62,42 +62,19 @@ void syscall_init() {
     pid = -1;
 }
 
+
+/*
+ * halt
+ *   DESCRIPTION: Halts current terminal, opens new one if pid is 0 or -1
+ *   INPUTS: const uint8_t command: status/command to be used for execute
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1, but should never get there as in line asm should 
+ *               return to other function. eax has commmand 32 b extended
+ *   SIDE EFFECTS: ebp esp and eax restored. 
+ */
 int32_t halt (const uint8_t command)
 {
-    // uint32_t ret;
-    // ret = (uint32_t)command;
-    // int i;
-    // for (i = 0; i < 8; i++) {
-    //     pcb_ptr->file_array[i].flags = 0;
-    // }
-    // if(pid <= 0)
-    // {
-    //     pid = -1;
-    //     //pcb_ptr = pcb_array + pid;
-    //     execute("shell");
-    // }
-    // pid--;
-    // tss.ss0 = KERNEL_DS;
-    // tss.esp0 = (MB_8-(KB_8*(pid)) - 4);
-    // pcb_ptr = pcb_array + pid + 1;
-    // uint32_t ebp = pcb_ptr->prev_ebp;
-    // uint32_t esp = pcb_ptr->prev_esp;
-    // page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / KB4;
-    // flushtlb();
-    // asm volatile(" \n\
-    //     movl %%eax, %%ebp\n\
-    //     movl %%ebx, %%esp\n\
-    //     movl %%ecx, %%eax\n\
-    //     leave \n\
-    //     ret \n\
-    //     "
-    //     :
-    //     :"a"(ebp),"b"(esp),"c"(ret)
-    //     : "memory"
-    // );
-    // return -1;
-
-    uint32_t ret;
+/*    uint32_t ret;
     ret = (uint32_t)command;
     int i;
     for (i = 0; i < 8; i++) {
@@ -108,7 +85,6 @@ int32_t halt (const uint8_t command)
         pid = -1;
         //pcb_ptr = pcb_array + pid;
         execute("shell");
-        return command;
     }
     pid--;
     tss.ss0 = KERNEL_DS;
@@ -116,6 +92,41 @@ int32_t halt (const uint8_t command)
     pcb_ptr = pcb_array + pid + 1;
     uint32_t ebp = pcb_ptr->prev_ebp;
     uint32_t esp = pcb_ptr->prev_esp;
+    page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / KB4;
+    flushtlb();
+    asm volatile(" \n\
+        movl %%eax, %%ebp\n\
+        movl %%ebx, %%esp\n\
+        movl %%ecx, %%eax\n\
+        leave \n\
+        ret \n\
+        "
+        :
+        :"a"(ebp),"b"(esp),"c"(ret)
+        : "memory"
+    );
+    return -1;
+*/
+    uint32_t ret;
+    ret = (uint32_t)command;
+    // int i;
+    // for (i = 0; i < 8; i++) {
+    //     pcb_ptr->file_array[i].flags = 0;
+    // }
+    if(pid <= 0)
+    {
+        pid = -1;
+        //pcb_ptr = pcb_array + pid;
+        execute((uint8_t*) "shell");
+        return command;
+    }
+    uint32_t ebp = pcb_ptr->prev_ebp;
+    uint32_t esp = pcb_ptr->prev_esp;
+    pid--;
+    tss.ss0 = KERNEL_DS;
+    tss.esp0 = (MB_8-(KB_8*(pid)) - 4); // skip first location
+    pcb_ptr = pcb_array + pid + 1;
+
     page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / KB4;
     flushtlb();
     asm volatile(" \n\
@@ -131,6 +142,18 @@ int32_t halt (const uint8_t command)
     );
     return -1;
 }
+
+
+
+/*
+ * execute
+ *   DESCRIPTION: Gets command input, Runs specified executable file
+ *   INPUTS: const uint8_t command: status/command to be used for running
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if any errors. If completed, return 0 but should never
+ *                 get there as in line asm should return to other function.
+ *   SIDE EFFECTS: ebp esp and eax restored, to go to shell. 
+ */
 
 int32_t execute (const uint8_t* command)
 {
@@ -167,9 +190,9 @@ int32_t execute (const uint8_t* command)
     {
         return -1;
     }
-    buf[4] = '\0';
+    buf[4] = '\0'; // 4 is for last char
     char elf[4] = {0x7F, 'E', 'L', 'F'}; //ELF FORMAT MAGIC NUMBERS 
-    if (strncmp(buf, elf, 4) != 0)
+    if (strncmp(buf, elf, 4) != 0) // 4 is size of ELF
     {
         return -1;
     }
@@ -194,7 +217,7 @@ int32_t execute (const uint8_t* command)
 
     pcb_ptr->pid = pid;
     pcb_ptr->parent_pid = pid-1;
-    for (i = 2; i < 8; i++) {
+    for (i = 2; i < 8; i++) { // 8 locations in file array
         pcb_ptr->file_array[i].inode = 0;
         pcb_ptr->file_array[i].file_position = 0;
         pcb_ptr->file_array[i].file_operations_ptr = NULL;
@@ -204,7 +227,7 @@ int32_t execute (const uint8_t* command)
     stdin.open = terminal_open;
     stdin.close = terminal_close;
     stdin.read = terminal_read;
-    stdin.write = terminal_write;
+    stdin.write = null_write;
 
     pcb_ptr->file_array[0].inode = 0;
     pcb_ptr->file_array[0].file_position = 0;
@@ -213,7 +236,7 @@ int32_t execute (const uint8_t* command)
 
     stdout.open = terminal_open;
     stdout.close = terminal_close;
-    stdout.read = terminal_read;
+    stdout.read = null_read;
     stdout.write = terminal_write;
 
     pcb_ptr->file_array[1].inode = 0;
@@ -221,13 +244,13 @@ int32_t execute (const uint8_t* command)
     pcb_ptr->file_array[1].file_operations_ptr = &stdout;
     pcb_ptr->file_array[1].flags = 1;
 
-    uint8_t entry_pt[4];
+    uint8_t entry_pt[4]; // 4 is size of 4 bytes
     if (read_data(dentry.inode_num, 24, (uint8_t *)entry_pt, 4) == -1) {
         pid--;
         return -1;
     }
 
-
+    // 8,16,24 is for shifting multiple bytes
     uint32_t new_eip = entry_pt[0] + (entry_pt[1] << 8) + (entry_pt[2] << 16) + (entry_pt[3] << 24);
     uint32_t new_esp = (MB_4 * 33) - 4;
     register uint32_t ebp asm("ebp");
@@ -238,6 +261,7 @@ int32_t execute (const uint8_t* command)
     //pcb_ptr->prev_eip = new_eip;
 
     tss.ss0 = KERNEL_DS;
+    // 4 is for skipping first location
     tss.esp0 = (MB_8-(KB_8*(pid)) - 4);
 
     sti();
@@ -258,15 +282,26 @@ int32_t execute (const uint8_t* command)
     return 0;
 }
 
+
+/*
+ * open
+ *   DESCRIPTION: Find file in FS.  assign an unused file descriptor. swt up fds
+ *   INPUTS: const uint8_t filename: name of file needed for execute/other functions
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if any errors. return fd assigned if success
+ *   SIDE EFFECTS: none
+ */
 int32_t open(const uint8_t* filename)
 {
     int fd = 0;
     int i;
+    // 8 is for file array length
     for (i = 0; i < 8; i++) {
         if (pcb_ptr->file_array[i].flags == 0) {
             fd = i;
             break;
         }
+        // 7 is is last index
         if (i == 7) {
             return -1;
         }
@@ -300,9 +335,19 @@ int32_t open(const uint8_t* filename)
     return fd;
 }
 
+
+/*
+ * close
+ *   DESCRIPTION: Close the file descriptor passed in
+ *   INPUTS: int32_t fd. fd from open used to close file
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if any errors. return close success/fail 
+ *   SIDE EFFECTS: none
+ */
 int32_t close(int32_t fd)
 {
-    if(fd > 7 || fd < 0)
+    // 7 is last one and 2 is after stdin and stdout
+    if(fd > 7 || fd < 2)
     {
         return -1;
     }
@@ -316,9 +361,19 @@ int32_t close(int32_t fd)
 
     return pcb_ptr->file_array[fd].file_operations_ptr->close(fd);     
 }
+
+/*
+ * read
+ *   DESCRIPTION: Use file operations jump table to call the corresponding read fxn
+ *   INPUTS: file desc, index to file array, void* buf: copy from  file name into buffer into, int32_t nbytes
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if any errors. return bytes read if success
+ *   SIDE EFFECTS: none
+ */
 int32_t read(int32_t fd, void* buf, int32_t nbytes)
 {
     // Error Checking:
+    // 7 is for last index
     if(fd>7 || fd<0 || nbytes<0 || buf == NULL)
     {
         return -1;
@@ -330,8 +385,18 @@ int32_t read(int32_t fd, void* buf, int32_t nbytes)
     return pcb_ptr->file_array[fd].file_operations_ptr->read(fd,buf,nbytes);     
 
 }
+
+/*
+ * write
+ *   DESCRIPTION: Use file operations jump table to call the corresponding write fxn
+ *   INPUTS: file desc, index to file array, void* buf: copy from  file name into buffer into, int32_t nbytes
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if any errors. return bytes written if success
+ *   SIDE EFFECTS: none
+ */
 int32_t write(int32_t fd, const void* buf, int32_t nbytes)
 {
+    // 7 is for last index
     if(fd>7 || fd<0 || nbytes<0 || buf==NULL)  //62 is max num files
     {
         return -1;
@@ -343,6 +408,33 @@ int32_t write(int32_t fd, const void* buf, int32_t nbytes)
     return pcb_ptr->file_array[fd].file_operations_ptr->write(fd,buf,nbytes);
 }
 
+/*
+ * read
+ *   DESCRIPTION: Use file operations jump table to call the corresponding read fxn
+ *   INPUTS: file desc, index to file array, void* buf: copy from  file name into buffer into, int32_t nbytes
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if called
+ *   SIDE EFFECTS: none
+ */
+int32_t null_read(int32_t fd, void* buf, int32_t nbytes)
+{
+    // Error Checking:
+    return -1;   
+
+}
+
+/*
+ * write
+ *   DESCRIPTION: Use file operations jump table to call the corresponding write fxn
+ *   INPUTS: file desc, index to file array, void* buf: copy from  file name into buffer into, int32_t nbytes
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if called
+ *   SIDE EFFECTS: none
+ */
+int32_t null_write(int32_t fd, const void* buf, int32_t nbytes)
+{
+    return -1;
+}
 
 
 // int32_t video_mapping(uint32_t ** pageDirAddr)

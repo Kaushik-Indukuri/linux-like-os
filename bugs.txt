@@ -42,7 +42,7 @@
 3/21,
     This bug occured because the keyboard would print the pressed and depressed outputs. This was fixed by adding a range check
     to ensure that only presses are printed
-
+________________________________________________________________________________________________________
 3/24,
     E: RTC read not allowing for read. After GDB, did not get to end
     F: Did not need the if statement before. More importantly, did not set interrupt flag to 0. 
@@ -84,4 +84,59 @@
 3/26,
     E: When reading from a file random characters were getting copied onto the screen
     F: Had to allocate additional space in the buffer to account for an end of string character as the character is needed to properly print a string to the screen
+
+________________________________________________________________________________________________________
+CP3:
+
+4/9,
+    E: User 4MB page is not working/ not found by compiler with info mem
+    F: We used i=2 instead of i=32 for paging set up.
+4/9,
+    E: User page is giving general protection fault when running any commands
+    F: Did not set user privilege bit in paging.c setup
+4/9,
+    E: flushtlb is not being reached / run
+    F: Stack setup was probably incorrect, moved assembly into syscall.c using inline assembly
+4/9,
+    E: Compilation error, we have seen this before for using incorrect includes
+    F: Added infned and endifs, and compiled
+4/10,
+    E: Another compilation error, something wrong with .o files
+    F: Assembly file had same name as c/h file, changed name and compiled fine
+
+4/10,
+    E: Another compilation error, something wrong with .o files
+    F: Assembly file had same name as c/h file, changed name and compiled fine
+
+4/10,
+    E: After GDB, iret in execute does not return properly 
+    F: Using wrong offsets for User CS/DS stuff, copied addr from x86_desc.h and works
+
+4/10,
+    E: EIP is not correct after stepping through it 
+    F: Calculated EIP wrong, accessed wrong elements of entry_pt array, went backwards
+
+4/10,
+    E: Program is not getting the correct return values 
+    F: Directory read did not return the correct values
+
+4/11,
+    E: TA said Terminal should not be interrupting every time  
+    F: Did not interrupt everytime key was pressed, only after enter pressed
+
+4/11,
+    E: After above fix, only one char shows up when command typed  
+    F: Updated terminal write to add char within buffer before enter pressed
+
+4/11,
+    E: Spaces before command does not work  
+    F: Added logic to allow spaces before and after commant (will just be ignored)
+
+4/11,
+    E: Spaces before command does not work  
+    F: Added logic to allow spaces before and after commant (will just be ignored)
+
+4/11,
+    E: Halt is running twice for some reason  
+    F: In halt, we reset all pid flags to 0. after commented out, works as intended
 

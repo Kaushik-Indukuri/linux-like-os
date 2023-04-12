@@ -7,11 +7,7 @@
         ja syscallerror              
         pushl %edi
         pushl %esi
-        pushl %ebp
-        pushl %esp
         pushl %ebx
-        pushl %edx
-        pushl %ecx
         pushfl
         pushl %edx
         pushl %ecx
@@ -20,11 +16,7 @@
         call *syscalltable(,%eax,4)
         addl $12, %esp
         popfl
-        popl %ecx
-        popl %edx
         popl %ebx
-        popl %esp
-        popl %ebp
         popl %esi
         popl %edi
         jmp return
