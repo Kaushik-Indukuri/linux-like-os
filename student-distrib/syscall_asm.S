@@ -3,7 +3,7 @@
     syscall:        
         cmpl $0, %eax
         jbe syscallerror
-        cmpl $10, %eax
+        cmpl $6, %eax
         ja syscallerror              
         pushl %edi
         pushl %esi
