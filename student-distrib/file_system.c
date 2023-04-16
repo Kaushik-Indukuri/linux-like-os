@@ -129,8 +129,13 @@ int32_t file_read(int32_t fd, void* buf, int32_t nbytes) {
         return -1;
     }
     int inode = pcb_ptr->file_array[fd].inode;
-    int ret = read_data(inode, 0, buf, nbytes); // take data with associated filename
+    int ret = read_data(inode, pcb_ptr->file_array[fd].file_position, buf, nbytes); // take data with associated filename
     pcb_ptr->file_array[fd].file_position += ret;   // update file pos
+    inode_t * inode_ptr = (inode_t *)(boot_block_ptr + 1 + pcb_ptr->file_array[fd].inode); 
+    int length = inode_ptr->length * 4096;
+    if (pcb_ptr->file_array[fd].file_position >= length) {
+        pcb_ptr->file_array[fd].file_position = 0;
+    }
     return ret;
 }
 

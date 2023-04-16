@@ -20,7 +20,7 @@
 #define tableI 0xb8 // location of only table initalized
 
 pcb_t* pcb_ptr;
-pcb_t pcb_array[2];
+pcb_t pcb_array[6];
 int pid;
 file_operations_t stdin;
 file_operations_t stdout;
@@ -111,16 +111,18 @@ int32_t halt (const uint8_t command)
     );
     return -1;
 */
+    pcb_ptr = pcb_array + pid;
     uint32_t ret;
     ret = (uint32_t)command;
-    // int i;
-    // for (i = 0; i < 8; i++) {
-    //     pcb_ptr->file_array[i].flags = 0;
-    // }
+    int i;
+    for (i = 0; i < 8; i++) {
+        pcb_ptr->file_array[i].flags = 0;
+    }
     if(pid <= 0)
     {
         pid = -1;
         //pcb_ptr = pcb_array + pid;
+        // printf("Halt called from base shell.\n");
         execute((uint8_t*) "shell");
         return command;
     }
@@ -129,7 +131,7 @@ int32_t halt (const uint8_t command)
     pid--;
     tss.ss0 = KERNEL_DS;
     tss.esp0 = (MB_8-(KB_8*(pid)) - 4); // skip first location
-    pcb_ptr = pcb_array + pid + 1;
+    pcb_ptr = pcb_array + pid;
 
     page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / KB4;
     flushtlb();
@@ -165,13 +167,18 @@ int32_t execute (const uint8_t* command)
     int space = 0;
     int i = 0;
     int cmdLen = 0;
-    int argLen=0;
+    int argStart=0;
     while(command[space]== ' ')
     {
         space++;
     }
-    while(command[i + space]!=0x00 && command[i + space]!= ' ')
+    while(command[i + space]!=0x00 )
     {
+        if(command[i + space]== ' ')
+        {
+            argStart=i+1;
+            break;
+        }
         cmdLen++;
         i++;
     }
@@ -180,16 +187,18 @@ int32_t execute (const uint8_t* command)
     { 
         file_exec[i-space] = command[i];
     }
-
-    for(i = space + cmdLen; command[i] != '\0' ;i++)
+    if(argStart>0)
     {
-        if(command[i]!=' ')
+        for(i = space + cmdLen+1; command[i] != '\0';i++)
         {
-            arg[argLen]=command[i];
-            argLen++;
-        }
-        else{
-            break;
+            if(command[i]!=' ')
+            {
+                arg[argStart-cmdLen-1]=command[i];
+                argStart++;
+            }
+            else{
+                break;
+            }
         }
     }
 
@@ -218,9 +227,10 @@ int32_t execute (const uint8_t* command)
 
     /*Setup program paging*/
     pid++;
-    if (pid > 1) {
+    if (pid > 5) {
         pid--;
-        return -1;
+        printf("Max Processes Reached\n");
+        return 0;
     }
     page_directory[32].addrlong = (MB_8 + MB_4*pid) / KB4;
 
@@ -229,7 +239,7 @@ int32_t execute (const uint8_t* command)
     /*Move exectubale data into virtual address space*/
     pcb_ptr = pcb_array + pid;
     uint8_t * program_ptr = (uint8_t *)(user_page_start + user_program_start);
-    if (read_data(dentry.inode_num, 0, program_ptr, ((inode_t *)(boot_block_ptr) + 1 + dentry.inode_num)->length * KB4) == -1) {
+    if (read_data(dentry.inode_num, 0, program_ptr, ((inode_t *)(boot_block_ptr) + 1 + dentry.inode_num)->length) == -1) {
         pid--;
         return -1;
     }
@@ -475,7 +485,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes)
     {
         return -1;
     }
-    strcpy((char*)buf, arg );
+    strcpy((char*)buf, arg);
     return 0;
 }
 
@@ -496,18 +506,20 @@ int32_t vidmap (uint8_t** screen_start)
 
     page_directory[34].ps=0;
     page_directory[34].p=1;
-    page_directory[34].us=0;        
+    page_directory[34].us=1;        
+    page_directory[34].rw=1;        
     page_directory[34].addrlong= (int)(video_mapping)/KB4;
 
     video_mapping[0].p=1;
     video_mapping[0].us=1;    
     video_mapping[0].addr=tableI;
+    video_mapping[0].rw=1;    
+
     flushtlb();
     // How / Why modify screen start
     // uint32_t* ofset=((MB_8 + KB4*2)); // 2nd KB assigned, this is 2nd
     // *screen_start =(uint32_t*) ((MB_8 + KB4*2)); //How do I calculate offset for mem that screen start has
     *screen_start =(uint32_t*) (0x8800000); //How do I calculate offset for mem that screen start has
     return 0;
-
 }
 
