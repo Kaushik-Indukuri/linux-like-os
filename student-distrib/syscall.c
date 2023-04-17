@@ -7,6 +7,7 @@
 #include "syscall.h"
 #include "terminal.h"
 #include "file_system.h"
+#include "keyboard.h"
 
 #define MB_8 (1<<23) // 8 MB
 #define KB_8 (1<<13) // 8 KB
@@ -18,9 +19,10 @@
 #define USRSTARTADDR 0x08000000
 #define USRENDADDR   0x80480000
 #define tableI 0xb8 // location of only table initalized
+#define MB132 0x8800000
 
 pcb_t* pcb_ptr;
-pcb_t pcb_array[6];
+pcb_t pcb_array[3];
 int pid;
 file_operations_t stdin;
 file_operations_t stdout;
@@ -111,6 +113,7 @@ int32_t halt (const uint8_t command)
     );
     return -1;
 */
+    kbdenable=1; //reenable keyboard
     pcb_ptr = pcb_array + pid;
     uint32_t ret;
     ret = (uint32_t)command;
@@ -201,10 +204,13 @@ int32_t execute (const uint8_t* command)
             }
         }
     }
-
+    arg[argStart+1] = '\0';
     file_exec[cmdLen] = '\0';
  
-
+    if(strncmp(file_exec, "pingpong", 8)==0 || strncmp(file_exec, "fish", 8)==0)
+    {
+        kbdenable=0; //If pingpong or fish run , do not take KB input, but reenable in halt 
+    }
     /*Check executable*/
     dentry_t dentry;
     if(read_dentry_by_name((uint8_t*)file_exec, &dentry)==-1)
@@ -227,7 +233,7 @@ int32_t execute (const uint8_t* command)
 
     /*Setup program paging*/
     pid++;
-    if (pid > 5) {
+    if (pid > 2) {
         pid--;
         printf("Max Processes Reached\n");
         return 0;
@@ -331,7 +337,7 @@ int32_t open(const uint8_t* filename)
             break;
         }
         // 7 is is last index
-        if (i == 7) {
+        if (i == 7 || strlen((int8_t*)filename) == 0) {
             return -1;
         }
     }
@@ -475,23 +481,25 @@ int32_t null_write(int32_t fd, const void* buf, int32_t nbytes)
  */
 int32_t getargs (uint8_t* buf, int32_t nbytes)
 {
-    if(buf==NULL || nbytes<0)
-    {
-        return -1;
-    }
     pcb_t* temp;
     temp= (pcb_t*)(MB_8-(KB_8*(pid)) - 4); //This addr is same we used to get execute addr, but no PID so?
-    if(temp==NULL)
+    if(buf==NULL || nbytes<0 || temp==NULL)
     {
         return -1;
     }
-    strcpy((char*)buf, arg);
+    strcpy((char*)buf, arg); // if no errors, copy over
+    
+    int i;
+    for(i = 0;i<32;i++) //32 = max buffer size
+    {
+        arg[i] = '\0'; //clear arg buffer
+    }
     return 0;
 }
 
 /*
  * vidmap
- *   DESCRIPTION: ?????????
+ *   DESCRIPTION: Set up page for video mapping, and set screen start offset 
  *   INPUTS: uint8_t** screen_start: double pointer to mem accessed
  *   OUTPUTS: none
  *   RETURN VALUE: -1 if fail, 0 if success
@@ -504,22 +512,20 @@ int32_t vidmap (uint8_t** screen_start)
         return -1;
     }
 
-    page_directory[34].ps=0;
+    video_mapping[0].p=1;
+    video_mapping[0].rw=1;
+    video_mapping[0].us=1;    
+    video_mapping[0].addr=tableI;
+        page_directory[34].ps=0;
     page_directory[34].p=1;
     page_directory[34].us=1;        
     page_directory[34].rw=1;        
     page_directory[34].addrlong= (int)(video_mapping)/KB4;
-
-    video_mapping[0].p=1;
-    video_mapping[0].us=1;    
-    video_mapping[0].addr=tableI;
-    video_mapping[0].rw=1;    
-
     flushtlb();
     // How / Why modify screen start
     // uint32_t* ofset=((MB_8 + KB4*2)); // 2nd KB assigned, this is 2nd
     // *screen_start =(uint32_t*) ((MB_8 + KB4*2)); //How do I calculate offset for mem that screen start has
-    *screen_start =(uint32_t*) (0x8800000); //How do I calculate offset for mem that screen start has
+    *screen_start =(uint8_t*) (MB132); // 132 MB
     return 0;
 }
 

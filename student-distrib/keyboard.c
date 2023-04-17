@@ -12,6 +12,7 @@ int keystroke;
 int kbdStart_x;
 int kbdStart_y;
 int kbdBufPos;
+int kbdenable;
 
 char kbdnumvals [] = {'1','2','3','4','5','6','7','8','9','0','-','=',
                         '!','@','#','$','%','^','&','*','(',')','_','+'};
@@ -32,6 +33,7 @@ char kbdletvals_3 [] = {'\\','z','x','c','v','b','n','m',',','.','/',
 void keyboard_init()
 {
     enable_irq(1); //Initializes keyboard with irq 1 on primary pic
+    kbdenable=1;
 }
 
 /* void keyboard_ir_handler()
@@ -70,7 +72,7 @@ void keyboard_ir_handler()
     {
         terminal_open(NULL);
     }
-    else if(keystroke==0x0E && strlen(keyboardBuffer) > 0) //0x0E = keycode for backspace
+    else if(keystroke==0x0E && strlen(keyboardBuffer) > 0 && kbdenable==1) //0x0E = keycode for backspace
     {
         kbdBufPos--;
         keyboardBuffer[kbdBufPos] = ' ';
@@ -83,7 +85,7 @@ void keyboard_ir_handler()
         screen_x--;
         update_cursor(screen_x,screen_y);
      }   
-    else if(keystroke<=0x39 && strlen(keyboardBuffer)<127 && printKey(keystroke,shiftFlag,capsFlag)!=0x00) //0x39 = max range for key inputs
+    else if(keystroke<=0x39 && strlen(keyboardBuffer)<127 && printKey(keystroke,shiftFlag,capsFlag)!=0x00 && kbdenable==1) //0x39 = max range for key inputs
     {
         if(strlen(keyboardBuffer)==0)
         {
@@ -97,7 +99,7 @@ void keyboard_ir_handler()
         screen_y = kbdStart_y;
         terminal_write(0,keyboardBuffer,kbdBufPos); //Rewrites line to terminal
     }
-    else if(keystroke==0x1C) //0x1C = keycode for enter
+    else if(keystroke==0x1C && kbdenable==1) //0x1C = keycode for enter
     {
         if(strlen(keyboardBuffer)==0)
         {
