@@ -78,41 +78,8 @@ void syscall_init() {
  *               return to other function. eax has commmand 32 b extended
  *   SIDE EFFECTS: ebp esp and eax restored. 
  */
-int32_t halt (const uint8_t command)
+int32_t halt (const uint32_t command)
 {
-/*    uint32_t ret;
-    ret = (uint32_t)command;
-    int i;
-    for (i = 0; i < 8; i++) {
-        pcb_ptr->file_array[i].flags = 0;
-    }
-    if(pid <= 0)
-    {
-        pid = -1;
-        //pcb_ptr = pcb_array + pid;
-        execute("shell");
-    }
-    pid--;
-    tss.ss0 = KERNEL_DS;
-    tss.esp0 = (MB_8-(KB_8*(pid)) - 4);
-    pcb_ptr = pcb_array + pid + 1;
-    uint32_t ebp = pcb_ptr->prev_ebp;
-    uint32_t esp = pcb_ptr->prev_esp;
-    page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / KB4;
-    flushtlb();
-    asm volatile(" \n\
-        movl %%eax, %%ebp\n\
-        movl %%ebx, %%esp\n\
-        movl %%ecx, %%eax\n\
-        leave \n\
-        ret \n\
-        "
-        :
-        :"a"(ebp),"b"(esp),"c"(ret)
-        : "memory"
-    );
-    return -1;
-*/
     kbdenable=1; //reenable keyboard
     pcb_ptr = pcb_array + pid;
     uint32_t ret;
@@ -235,10 +202,10 @@ int32_t execute (const uint8_t* command)
     pid++;
     if (pid > 2) {
         pid--;
-        printf("Max Processes Reached\n");
+        terminal_write(2,"Max Processes Reached\n",22); // Num char of string
         return 0;
     }
-    page_directory[32].addrlong = (MB_8 + MB_4*pid) / KB4;
+    page_directory[32].addrlong = (MB_8 + MB_4*pid) / KB4; //32nd index
 
     flushtlb();
 
@@ -382,7 +349,7 @@ int32_t open(const uint8_t* filename)
 int32_t close(int32_t fd)
 {
     // 7 is last one and 2 is after stdin and stdout
-    if(fd > 7 || fd < 2)
+    if(fd > 7 || fd < 2) //checl bounds 
     {
         return -1;
     }
@@ -409,7 +376,7 @@ int32_t read(int32_t fd, void* buf, int32_t nbytes)
 {
     // Error Checking:
     // 7 is for last index
-    if(fd>7 || fd<0 || nbytes<0 || buf == NULL)
+    if(fd>7 || fd<0 || nbytes<0 || buf == NULL) //checl bounds 
     {
         return -1;
     }
@@ -516,7 +483,7 @@ int32_t vidmap (uint8_t** screen_start)
     video_mapping[0].rw=1;
     video_mapping[0].us=1;    
     video_mapping[0].addr=tableI;
-        page_directory[34].ps=0;
+    page_directory[34].ps=0;
     page_directory[34].p=1;
     page_directory[34].us=1;        
     page_directory[34].rw=1;        

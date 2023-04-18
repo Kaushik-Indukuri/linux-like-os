@@ -133,6 +133,6 @@ void exception_idt(int32_t num) {
         printf("%x",val);
     }
     //while(1){
-    halt(0);
+    halt((uint32_t)256);
     //}
 }
