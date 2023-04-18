@@ -7,6 +7,7 @@
 #include "syscall.h"
 #include "terminal.h"
 #include "file_system.h"
+#include "keyboard.h"
 
 #define MB_8 (1<<23) // 8 MB
 #define KB_8 (1<<13) // 8 KB
@@ -15,16 +16,21 @@
 #define user_program_start  0x48000
 #define user_page_start     0x08000000
 
-
+#define USRSTARTADDR 0x08000000
+#define USRENDADDR   0x80480000
+#define tableI 0xb8 // location of only table initalized
+#define MB132 0x8800000
 
 pcb_t* pcb_ptr;
-pcb_t pcb_array[2];
+pcb_t pcb_array[3];
 int pid;
 file_operations_t stdin;
 file_operations_t stdout;
 file_operations_t rtc;
 file_operations_t file;
 file_operations_t directory;
+
+char arg[32];
 
 /* Segment selector values */
 #define KERNEL_CS   0x0010
@@ -72,9 +78,11 @@ void syscall_init() {
  *               return to other function. eax has commmand 32 b extended
  *   SIDE EFFECTS: ebp esp and eax restored. 
  */
-int32_t halt (const uint8_t command)
+int32_t halt (const uint32_t command)
 {
-/*    uint32_t ret;
+    kbdenable=1; //reenable keyboard
+    pcb_ptr = pcb_array + pid;
+    uint32_t ret;
     ret = (uint32_t)command;
     int i;
     for (i = 0; i < 8; i++) {
@@ -84,39 +92,7 @@ int32_t halt (const uint8_t command)
     {
         pid = -1;
         //pcb_ptr = pcb_array + pid;
-        execute("shell");
-    }
-    pid--;
-    tss.ss0 = KERNEL_DS;
-    tss.esp0 = (MB_8-(KB_8*(pid)) - 4);
-    pcb_ptr = pcb_array + pid + 1;
-    uint32_t ebp = pcb_ptr->prev_ebp;
-    uint32_t esp = pcb_ptr->prev_esp;
-    page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / KB4;
-    flushtlb();
-    asm volatile(" \n\
-        movl %%eax, %%ebp\n\
-        movl %%ebx, %%esp\n\
-        movl %%ecx, %%eax\n\
-        leave \n\
-        ret \n\
-        "
-        :
-        :"a"(ebp),"b"(esp),"c"(ret)
-        : "memory"
-    );
-    return -1;
-*/
-    uint32_t ret;
-    ret = (uint32_t)command;
-    // int i;
-    // for (i = 0; i < 8; i++) {
-    //     pcb_ptr->file_array[i].flags = 0;
-    // }
-    if(pid <= 0)
-    {
-        pid = -1;
-        //pcb_ptr = pcb_array + pid;
+        // printf("Halt called from base shell.\n");
         execute((uint8_t*) "shell");
         return command;
     }
@@ -125,7 +101,7 @@ int32_t halt (const uint8_t command)
     pid--;
     tss.ss0 = KERNEL_DS;
     tss.esp0 = (MB_8-(KB_8*(pid)) - 4); // skip first location
-    pcb_ptr = pcb_array + pid + 1;
+    pcb_ptr = pcb_array + pid;
 
     page_directory[32].addrlong = (MB_8 + MB_4*(pid)) / KB4;
     flushtlb();
@@ -161,12 +137,18 @@ int32_t execute (const uint8_t* command)
     int space = 0;
     int i = 0;
     int cmdLen = 0;
+    int argStart=0;
     while(command[space]== ' ')
     {
         space++;
     }
-    while(command[i + space]!=0x00 && command[i + space]!= ' ')
+    while(command[i + space]!=0x00 )
     {
+        if(command[i + space]== ' ')
+        {
+            argStart=i+1;
+            break;
+        }
         cmdLen++;
         i++;
     }
@@ -175,8 +157,27 @@ int32_t execute (const uint8_t* command)
     { 
         file_exec[i-space] = command[i];
     }
+    if(argStart>0)
+    {
+        for(i = space + cmdLen+1; command[i] != '\0';i++)
+        {
+            if(command[i]!=' ')
+            {
+                arg[argStart-cmdLen-1]=command[i];
+                argStart++;
+            }
+            else{
+                break;
+            }
+        }
+    }
+    arg[argStart+1] = '\0';
     file_exec[cmdLen] = '\0';
  
+    if(strncmp(file_exec, "pingpong", 8)==0 || strncmp(file_exec, "fish", 8)==0)
+    {
+        kbdenable=0; //If pingpong or fish run , do not take KB input, but reenable in halt 
+    }
     /*Check executable*/
     dentry_t dentry;
     if(read_dentry_by_name((uint8_t*)file_exec, &dentry)==-1)
@@ -199,18 +200,19 @@ int32_t execute (const uint8_t* command)
 
     /*Setup program paging*/
     pid++;
-    if (pid > 1) {
+    if (pid > 2) {
         pid--;
-        return -1;
+        terminal_write(2,"Max Processes Reached\n",22); // Num char of string
+        return 0;
     }
-    page_directory[32].addrlong = (MB_8 + MB_4*pid) / KB4;
+    page_directory[32].addrlong = (MB_8 + MB_4*pid) / KB4; //32nd index
 
     flushtlb();
 
     /*Move exectubale data into virtual address space*/
     pcb_ptr = pcb_array + pid;
     uint8_t * program_ptr = (uint8_t *)(user_page_start + user_program_start);
-    if (read_data(dentry.inode_num, 0, program_ptr, ((inode_t *)(boot_block_ptr) + 1 + dentry.inode_num)->length * KB4) == -1) {
+    if (read_data(dentry.inode_num, 0, program_ptr, ((inode_t *)(boot_block_ptr) + 1 + dentry.inode_num)->length) == -1) {
         pid--;
         return -1;
     }
@@ -302,7 +304,7 @@ int32_t open(const uint8_t* filename)
             break;
         }
         // 7 is is last index
-        if (i == 7) {
+        if (i == 7 || strlen((int8_t*)filename) == 0) {
             return -1;
         }
     }
@@ -347,7 +349,7 @@ int32_t open(const uint8_t* filename)
 int32_t close(int32_t fd)
 {
     // 7 is last one and 2 is after stdin and stdout
-    if(fd > 7 || fd < 2)
+    if(fd > 7 || fd < 2) //checl bounds 
     {
         return -1;
     }
@@ -374,7 +376,7 @@ int32_t read(int32_t fd, void* buf, int32_t nbytes)
 {
     // Error Checking:
     // 7 is for last index
-    if(fd>7 || fd<0 || nbytes<0 || buf == NULL)
+    if(fd>7 || fd<0 || nbytes<0 || buf == NULL) //checl bounds 
     {
         return -1;
     }
@@ -436,13 +438,61 @@ int32_t null_write(int32_t fd, const void* buf, int32_t nbytes)
     return -1;
 }
 
+/*
+ * getargs
+ *   DESCRIPTION: Arguments are parsed from the command buffer in execute
+ *   INPUTS: void* buf: copy from  file name into buffer into, int32_t nbytes  num bytes modified
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if fail, 0 if success
+ *   SIDE EFFECTS: none
+ */
+int32_t getargs (uint8_t* buf, int32_t nbytes)
+{
+    pcb_t* temp;
+    temp= (pcb_t*)(MB_8-(KB_8*(pid)) - 4); //This addr is same we used to get execute addr, but no PID so?
+    if(buf==NULL || nbytes<0 || temp==NULL)
+    {
+        return -1;
+    }
+    strcpy((char*)buf, arg); // if no errors, copy over
+    
+    int i;
+    for(i = 0;i<32;i++) //32 = max buffer size
+    {
+        arg[i] = '\0'; //clear arg buffer
+    }
+    return 0;
+}
 
-// int32_t video_mapping(uint32_t ** pageDirAddr)
-// {
-//     if(pageDirAddr==NULL || uint32_t(pageDirAddr) < user_st_addr || uint32_t(pageDirAddr) > user_end_addr)
-//     {
-//         return -1;
-//     }
+/*
+ * vidmap
+ *   DESCRIPTION: Set up page for video mapping, and set screen start offset 
+ *   INPUTS: uint8_t** screen_start: double pointer to mem accessed
+ *   OUTPUTS: none
+ *   RETURN VALUE: -1 if fail, 0 if success
+ *   SIDE EFFECTS: none
+ */
+int32_t vidmap (uint8_t** screen_start)
+{
+    if(screen_start==NULL || (uint32_t)screen_start < USRSTARTADDR || (uint32_t)screen_start> USRENDADDR)
+    {
+        return -1;
+    }
 
-//     return 0;
-// }
+    video_mapping[0].p=1;
+    video_mapping[0].rw=1;
+    video_mapping[0].us=1;    
+    video_mapping[0].addr=tableI;
+    page_directory[34].ps=0;
+    page_directory[34].p=1;
+    page_directory[34].us=1;        
+    page_directory[34].rw=1;        
+    page_directory[34].addrlong= (int)(video_mapping)/KB4;
+    flushtlb();
+    // How / Why modify screen start
+    // uint32_t* ofset=((MB_8 + KB4*2)); // 2nd KB assigned, this is 2nd
+    // *screen_start =(uint32_t*) ((MB_8 + KB4*2)); //How do I calculate offset for mem that screen start has
+    *screen_start =(uint8_t*) (MB132); // 132 MB
+    return 0;
+}
+

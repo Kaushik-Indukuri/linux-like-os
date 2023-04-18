@@ -119,7 +119,20 @@ void exception_idt(int32_t num) {
     else {
         printf("%s", exception_strings[num]); //Print respective string for each exception
     }
+
+    if(num==14)
+    {
+        uint32_t val;
+        asm volatile ("             \n\
+                movl %%cr2, %0         \n\
+                "
+                : "=a"(val)
+                :
+                : "memory"
+        );
+        printf("%x",val);
+    }
     //while(1){
-    halt(0);
+    halt((uint32_t)256);
     //}
 }

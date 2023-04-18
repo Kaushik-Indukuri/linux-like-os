@@ -1,5 +1,6 @@
 #include "file_system.h"
 #include "syscall.h"
+#define KB4 4096 //4kb in bits
 
 extern pcb_t *pcb_ptr;
 
@@ -93,7 +94,7 @@ int32_t file_open(const uint8_t* filename) {
     if (filename == NULL) {
         return -1;
     }
-    if (strlen((int8_t*)filename) > 32) {
+    if (strlen((int8_t*)filename) == 0) {
         return -1;
     }
     dentry_t dentry;
@@ -129,8 +130,13 @@ int32_t file_read(int32_t fd, void* buf, int32_t nbytes) {
         return -1;
     }
     int inode = pcb_ptr->file_array[fd].inode;
-    int ret = read_data(inode, 0, buf, nbytes); // take data with associated filename
+    int ret = read_data(inode, pcb_ptr->file_array[fd].file_position, buf, nbytes); // take data with associated filename
     pcb_ptr->file_array[fd].file_position += ret;   // update file pos
+    inode_t * inode_ptr = (inode_t *)(boot_block_ptr + 1 + pcb_ptr->file_array[fd].inode); 
+    int length = inode_ptr->length * KB4;
+    if (pcb_ptr->file_array[fd].file_position >= length) {
+        pcb_ptr->file_array[fd].file_position = 0;
+    }
     return ret;
 }
 
@@ -156,12 +162,12 @@ int32_t file_write(int32_t fd, const void* buf, int32_t nbytes) {
  */
 int32_t read_dentry_by_name (const uint8_t* fname, dentry_t* dentry) {
     int len = strlen((char*)fname);
-    if (strlen((char*)fname) > FILENAME_LEN) {      // error check input vals
-        return -1;
-    }
-    if (strlen((char*)fname) == 0) {      // error check input vals
-        return -1;
-    }
+    // if (strlen((char*)fname) > FILENAME_LEN) {      // error check input vals
+    //     return -1;
+    // }
+    // if (strlen((char*)fname) == 0) {      // error check input vals
+    //     return -1;
+    // }
     if (dentry == NULL) {
         return -1;
     }

@@ -7,6 +7,7 @@ extern char keyboardBuffer [128];
 extern int kbdBufPos;
 extern int kbdStart_x;
 extern int kbdStart_y;
+extern int kbdenable;
 
 /*Initializes keyboard to recieve interrups*/
 void keyboard_init();

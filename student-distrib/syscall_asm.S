@@ -3,7 +3,7 @@
     syscall:        
         cmpl $0, %eax
         jbe syscallerror
-        cmpl $6, %eax
+        cmpl $8, %eax
         ja syscallerror              
         pushl %edi
         pushl %esi
@@ -28,6 +28,6 @@
 
     syscalltable:
         .long 0x00000000
-        .long halt, execute, read, write, open, close
+        .long halt, execute, read, write, open, close, getargs, vidmap
 
 

@@ -84,37 +84,42 @@ int terminal_write(int32_t fd, const void* buf, int32_t n)
         {
             if(screen_x == (screenWidth-1)) //goes to newline if char is at the end
             {
-                if( ((char*)buf)[i] == '\t')
+                if(((char*)buf)[i] == '\t')
                 {
                     terminal_write(2,"    ",4); //Prints 4 spaces for tab
                 }
                 else
                 {
-                    putc( ((char*)buf)[i]);
+                    putc(((char*)buf)[i]);
                 }
-                screen_y++;
+                if(((char*)buf)[i] != '\n')
+                {
+                    screen_y++;
+                }
+            
                 if(screen_y == screenHeight)
                 {
                     terminal_scroll(); //Scrolls to newline if input is at bottom
-                    screen_y=screenHeight-1;
+                    screen_y=24;
                     kbdStart_y--;
                 }
                 screen_x = 0;   
             }
             else
             {
-                if( ((char*)buf)[i] == '\t')
+                if(((char*)buf)[i] == '\t')
                 {
                     terminal_write(2,"    ",4); //Prints 4 spaces for tab
                 }
                 else
                 {
-                    putc( ((char*)buf)[i]);
+                    putc(((char*)buf)[i]);
                 }
                 if(screen_y == screenHeight)
                 {
                     terminal_scroll();
-                    screen_y=screenHeight-1;
+                    screen_y=24;
+                    screen_x = 0;
                 }
             }
         }

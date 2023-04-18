@@ -140,3 +140,37 @@ CP3:
     E: Halt is running twice for some reason  
     F: In halt, we reset all pid flags to 0. after commented out, works as intended
 
+________________________________________________________________________________________________________
+CP4:
+
+4/14,
+    E: Pingpong not working  
+    F: Scrolling was not working as intended, screen_y was being incremented twice
+
+4/14,
+    E: Pingpong accepts text when running  
+    F: Disabled text input whenever pingpong was called
+
+4/15,
+    E: Vidmap address not correct, page fault  
+    F: Confirmed addr was wrong by printing addr where PF occours, and corrected it to be 0x8800000
+
+4/15,
+    E: Flags should be cleared in halt, but when uncommented, does not work  
+    F: was using PID+1 in halt, should only be halting current shell
+
+4/15,
+    E: Only two shells are running, third is not able to run command  
+    F: Increased array of PID to allow for last shell to run command
+
+4/16,
+    E: Grep does not work after other programs were run  
+    F: Was not clearing arg buffer, noticed after gdb into getargs function
+
+4/17,
+    E: cat into verylongtext file was not working, no file found  
+    F: Was adding null char to already full buffer, and file dir read/open was looking for null char but it cannot fit, so removed those error checks
+
+4/17,
+    E: cat with no args does should say no args but does not  
+    F: Added coniditional to the read/write so that if file name len to be read is 0, return -1
