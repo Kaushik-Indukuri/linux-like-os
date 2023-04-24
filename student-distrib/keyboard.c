@@ -7,12 +7,13 @@ int shiftFlag = 0;
 int capsFlag = 0;
 int ctrlFlag = 0;
 int altFlag = 0;
-char keyboardBuffer [128];
 int keystroke;
-int kbdStart_x;
-int kbdStart_y;
-int kbdBufPos;
 int kbdenable;
+
+char keyboardBuffer[3][128];
+int kbdStart_x[3];
+int kbdStart_y[3];
+int kbdBufPos[3];
 
 char kbdnumvals [] = {'1','2','3','4','5','6','7','8','9','0','-','=',
                         '!','@','#','$','%','^','&','*','(',')','_','+'};
@@ -45,8 +46,6 @@ void keyboard_init()
  */
 void keyboard_ir_handler()
 {
-    //int i;
-    //cli();
     keystroke = inb(EOI);
     switch(keystroke)
     {
@@ -57,6 +56,12 @@ void keyboard_ir_handler()
         case 0xAA:
         case 0xB6: //0xB6 or 0xAA = Shift Released keycode
             shiftFlag = 0;
+            break;
+        case 0x38: //0x38 = Alt Pressed keycode
+            altFlag = 1;
+            break;
+        case 0xB8: //0x38 = Alt Released keycode
+            altFlag = 0;
             break;
         case 0x1D: //0x1D = Control Pressed keycode
             ctrlFlag = 1;
@@ -72,49 +77,52 @@ void keyboard_ir_handler()
     {
         terminal_open(NULL);
     }
-    else if(keystroke==0x0E && strlen(keyboardBuffer) > 0 && kbdenable==1) //0x0E = keycode for backspace
+    if(altFlag && (keystroke==0xBB||keystroke==0xBC||keystroke==0xBD))
     {
-        kbdBufPos--;
-        keyboardBuffer[kbdBufPos] = ' ';
-        termLineBuffer[kbdBufPos] = ' '; //Fills in backspaced spot with space
-        screen_x = kbdStart_x;
-        screen_y = kbdStart_y;
-        terminal_write(0,keyboardBuffer,kbdBufPos+1);
-        keyboardBuffer[kbdBufPos] = 0x00; //Makes backspaced spot null
-        termLineBuffer[kbdBufPos] = 0x00;
+        terminal_switch(keystroke-0xBB);
+    }
+    else if(keystroke==0x0E && strlen(keyboardBuffer[curr_terminal]) > 0 && kbdenable==1) //0x0E = keycode for backspace
+    {
+        kbdBufPos[curr_terminal]--;
+        keyboardBuffer[curr_terminal][kbdBufPos[curr_terminal]] = ' ';
+        termLineBuffer[curr_terminal][kbdBufPos[curr_terminal]] = ' '; //Fills in backspaced spot with space
+        screen_x = kbdStart_x[curr_terminal];
+        screen_y = kbdStart_y[curr_terminal];
+        terminal_write(0,keyboardBuffer[curr_terminal],kbdBufPos[curr_terminal]+1);
+        keyboardBuffer[curr_terminal][kbdBufPos[curr_terminal]] = 0x00; //Makes backspaced spot null
+        termLineBuffer[curr_terminal][kbdBufPos[curr_terminal]] = 0x00;
         screen_x--;
         update_cursor(screen_x,screen_y);
      }   
-    else if(keystroke<=0x39 && strlen(keyboardBuffer)<127 && printKey(keystroke,shiftFlag,capsFlag)!=0x00 && kbdenable==1) //0x39 = max range for key inputs
+    else if(keystroke<=0x39 && strlen(keyboardBuffer[curr_terminal])<127 && printKey(keystroke,shiftFlag,capsFlag)!=0x00 && kbdenable==1) //0x39 = max range for key inputs
     {
-        if(strlen(keyboardBuffer)==0)
+        if(strlen(keyboardBuffer[curr_terminal])==0)
         {
-            kbdStart_x = screen_x;
-            kbdStart_y = screen_y; //Sets keyboard line start and end position
+            kbdStart_x[curr_terminal] = screen_x;
+            kbdStart_y[curr_terminal] = screen_y; //Sets keyboard line start and end position
         }
-        keyboardBuffer[kbdBufPos] = printKey(keystroke,shiftFlag,capsFlag);
-        termLineBuffer[kbdBufPos] = printKey(keystroke,shiftFlag,capsFlag);
-        kbdBufPos++;
-        screen_x = kbdStart_x;
-        screen_y = kbdStart_y;
-        terminal_write(0,keyboardBuffer,kbdBufPos); //Rewrites line to terminal
+        keyboardBuffer[curr_terminal][kbdBufPos[curr_terminal]] = printKey(keystroke,shiftFlag,capsFlag);
+        termLineBuffer[curr_terminal][kbdBufPos[curr_terminal]] = printKey(keystroke,shiftFlag,capsFlag);
+        kbdBufPos[curr_terminal]++;
+        screen_x = kbdStart_x[curr_terminal];
+        screen_y = kbdStart_y[curr_terminal];
+        terminal_write(0,keyboardBuffer[curr_terminal],kbdBufPos[curr_terminal]); //Rewrites line to terminal
     }
     else if(keystroke==0x1C && kbdenable==1) //0x1C = keycode for enter
     {
-        if(strlen(keyboardBuffer)==0)
+        if(strlen(keyboardBuffer[curr_terminal])==0)
         {
-            kbdStart_x = screen_x;
-            kbdStart_y = screen_y;  
+            kbdStart_x[curr_terminal] = screen_x;
+            kbdStart_y[curr_terminal] = screen_y;  
         }
-        keyboardBuffer[kbdBufPos] = '\n'; //Adds new line char to buffer
-        termLineBuffer[kbdBufPos] = '\n';
-        screen_x = kbdStart_x;
-        screen_y = kbdStart_y;
-        terminal_write(0,keyboardBuffer,kbdBufPos+1);
-        termBufPos = kbdBufPos;
-        clear_kbdBuf(); //Clears keyboard buffer
+        keyboardBuffer[curr_terminal][kbdBufPos[curr_terminal]] = '\n'; //Adds new line char to buffer
+        termLineBuffer[curr_terminal][kbdBufPos[curr_terminal]] = '\n';
+        screen_x = kbdStart_x[curr_terminal];
+        screen_y = kbdStart_y[curr_terminal];
+        terminal_write(0,keyboardBuffer[curr_terminal],kbdBufPos[curr_terminal]+1);
+        termBufPos[curr_terminal] = kbdBufPos[curr_terminal];
+        clear_kbdBuf(curr_terminal); //Clears keyboard buffer
     }
-    //sti();
     send_eoi(1); //ends eoi at start
 }
 
@@ -183,14 +191,14 @@ char printKey(int code,int shift,int caps)
  *   RETURN VALUE: none
  *   SIDE EFFECTS: Clears the buffer
  */
-void clear_kbdBuf()
+void clear_kbdBuf(int terminal)
 {
     int i;
     for(i = 0;i<128;i++) //128 = max buffer size
     {
-        keyboardBuffer[i] = 0x00;
+        keyboardBuffer[terminal][i] = 0x00;
     }
-    kbdBufPos = 0;
+    kbdBufPos[terminal] = 0;
 }
 
 

@@ -233,7 +233,7 @@ int32_t execute (const uint8_t* command)
 
     pcb_ptr->file_array[0].inode = 0;
     pcb_ptr->file_array[0].file_position = 0;
-    pcb_ptr->file_array[0].file_operations_ptr = &stdin;
+    pcb_ptr->file_array[0 ].file_operations_ptr = &stdin;
     pcb_ptr->file_array[0].flags = 1;
 
     stdout.open = terminal_open;
