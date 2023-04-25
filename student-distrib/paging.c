@@ -13,6 +13,18 @@ void page_init()
             page_table[i].p = 1;
             page_table[i].addr = tableI;
         }
+        else if (i == 0xb9) {
+            page_table[i].p = 1;
+            page_table[i].addr = 0xb9;
+        }
+        else if (i == 0xba) {
+            page_table[i].p = 1;
+            page_table[i].addr = 0xba;
+        }
+        else if (i == 0xbb) {
+            page_table[i].p = 1;
+            page_table[i].addr = 0xbb;
+        }
         else {
             page_table[i].p = 0;
             page_table[i].addr = 0;

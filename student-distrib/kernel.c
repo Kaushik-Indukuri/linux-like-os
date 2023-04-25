@@ -154,6 +154,8 @@ void entry(unsigned long magic, unsigned long addr) {
     filesystem_init(ptr);
     rtc_init();
     terminal_open(NULL);
+    init_pit();
+   
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
@@ -167,7 +169,12 @@ void entry(unsigned long magic, unsigned long addr) {
 
 #ifdef RUN_TESTS
     /* Run tests */
-    //clear();
+    clear();
+    // ATTENTION PLEASE LOOK AT THIS LATER !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // LOOK HERE
+    // LOOKE HERE
+    // NOT FIXED
+
     //launch_tests();
 #endif
     /* Execute the first program ("shell") ... */

@@ -12,7 +12,7 @@ int saved_y[3] = {0,0,0};
 char termLineBuffer[3][128];
 int termBufPos[3];
 int curr_terminal = 0;
-#define vidstart 0xBA000
+#define vidstart 0xB9000
 #define KB4 4096
 
 /*
@@ -200,7 +200,7 @@ void clear_termBuf(int terminal)
 
 void terminal_switch(int destination)
 {
-    if(destination>3||destination<0||destination==curr_terminal)
+    if(destination>2||destination<0||destination==curr_terminal)
     {
         return;
     }

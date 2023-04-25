@@ -43,7 +43,7 @@ typedef struct pcb{
 } pcb_t;
 
 
-
+int search_pid();
 extern void flushtlb();
 
 #endif

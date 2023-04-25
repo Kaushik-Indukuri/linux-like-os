@@ -4,6 +4,7 @@
 #include "x86_desc.h"
 #include "keyboard_linkage.h"
 #include "rtc_linkage.h"
+#include "pit_linkage.h"
 #include "syscall.h"
 char exception_strings[numExceptions+1][30] = {
     "Division Error",
@@ -95,6 +96,10 @@ void init_idt()
     SET_IDT_ENTRY(idt[0x28], rtc_link);
     idt[0x28].reserved3 = 1;
     idt[0x28].present = 1;
+
+    SET_IDT_ENTRY(idt[0x20], pit_link);
+    idt[0x20].reserved3 = 1;
+    idt[0x20].present = 1;
 
     // Set x80 sys call to respective idt table number
     SET_IDT_ENTRY(idt[syscall_vecnum], syscall);
