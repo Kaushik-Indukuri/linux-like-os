@@ -1,7 +1,6 @@
 #include "rtc.h"
 #include "lib.h"
 #include "i8259.h"
-// #include "lib.h"
 #include "idt.h"
 #include "paging.h"
 #include "syscall.h"
@@ -92,9 +91,9 @@ int32_t halt (const uint32_t command)
         pcb_ptr->file_array[i].flags = 0;
     }
     int pid = pcb_ptr->pid;
-    if(pid = 0)
+    pid_array[pid] = 0;
+    if(pid == 0)
     {
-        pid_array[0] = 0;
         //pcb_ptr = pcb_array + pid;
         // printf("Halt called from base shell.\n");
         execute((uint8_t*) "shell");
@@ -102,7 +101,6 @@ int32_t halt (const uint32_t command)
     }
     uint32_t ebp = pcb_ptr->prev_ebp;
     uint32_t esp = pcb_ptr->prev_esp;
-    pid_array[pid] = 0;
     tss.ss0 = KERNEL_DS;
     tss.esp0 = (MB_8-(KB_8*(pcb_ptr->parent_pid)) - 4); // skip first location
     pcb_ptr = pcb_array + pcb_ptr->parent_pid;
@@ -226,6 +224,7 @@ int32_t execute (const uint8_t* command)
 
     pcb_ptr->pid = pid;
     pcb_ptr->parent_pid = parent_process;
+    terminal_pid[scheduled_terminal] = pid;
     for (i = 2; i < 8; i++) { // 8 locations in file array
         pcb_ptr->file_array[i].inode = 0;
         pcb_ptr->file_array[i].file_position = 0;
@@ -240,7 +239,7 @@ int32_t execute (const uint8_t* command)
 
     pcb_ptr->file_array[0].inode = 0;
     pcb_ptr->file_array[0].file_position = 0;
-    pcb_ptr->file_array[0 ].file_operations_ptr = &stdin;
+    pcb_ptr->file_array[0].file_operations_ptr = &stdin;
     pcb_ptr->file_array[0].flags = 1;
 
     stdout.open = terminal_open;
@@ -272,6 +271,7 @@ int32_t execute (const uint8_t* command)
     tss.ss0 = KERNEL_DS;
     // 4 is for skipping first location
     tss.esp0 = (MB_8-(KB_8*(pid)) - 4);
+    pcb_ptr->cur_tss = tss.esp0;
 
     sti();
 

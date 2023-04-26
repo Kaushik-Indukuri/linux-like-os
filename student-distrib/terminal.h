@@ -5,7 +5,9 @@
 
 extern int termBufPos[3];
 extern int curr_terminal;
+extern int scheduled_terminal;
 extern char termLineBuffer[3][128];
+extern int terminal_pid[3];
 
 /*function to initialize terminal inputs and outputs*/
 int terminal_open(const uint8_t* filename);

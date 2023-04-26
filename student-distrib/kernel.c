@@ -15,6 +15,8 @@
 #include "file_system.h"
 #include "rtc.h"
 #include "syscall.h"
+#include "pit.h"
+
 
 #define RUN_TESTS
 

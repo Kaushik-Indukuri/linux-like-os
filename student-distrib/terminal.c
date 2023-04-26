@@ -8,10 +8,12 @@ int screenWidth = 80;//Screen width = 80 chars
 int screenHeight = 25;//Screen height = 25 chars
 int saved_x[3] = {0,0,0};
 int saved_y[3] = {0,0,0};
+int terminal_pid[3] = {-1,-1,-1};
 
 char termLineBuffer[3][128];
 int termBufPos[3];
 int curr_terminal = 0;
+int scheduled_terminal = 0;
 #define vidstart 0xB9000
 #define KB4 4096
 

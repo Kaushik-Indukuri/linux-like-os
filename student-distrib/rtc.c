@@ -14,6 +14,7 @@
 
 volatile int rtc_interrupt_flag=0;
 
+volatile int rtc_interrupt_counter=0;
 
 
 /*
@@ -53,9 +54,16 @@ void rtc_ir_handler()
     outb(0x0C,rtcIO);	// select register C
     // terminal_write(0,"123",3);
     inb(cmosIO);
-    //test_interrupts();
     send_eoi(8);
-    rtc_interrupt_flag=1;
+    //test_interrupts();
+    if(rtc_interrupt_counter>0)
+    {
+        rtc_interrupt_counter--;
+    }
+    else
+    {
+        rtc_interrupt_flag=1;
+    }
 }
 
 
@@ -136,17 +144,20 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes)
         return -1;
     }
     int rate=rtc_logbase2( *(int *)buf);
+    rtc_interrupt_counter=rate;
+
     if(rate==-1)
     {
         return rate;
     }
-    rate &=0x0F;			// rate must be above 2 and not over 15
-    //cli();
-    outb(0x8A,0x70);		// set index to register A, disable NMI
-    char prev=inb(0x71);	// get initial value of register A
-    outb(0x8A,0x70);		// reset index to A
-    outb((prev & 0xF0) | rate, 0x71); //write only our rate to A. Note, rate is the bottom 4 bits.
-    //sti();
+
+    // rate &=0x0F;			// rate must be above 2 and not over 15
+    // //cli();
+    // outb(0x8A,0x70);		// set index to register A, disable NMI
+    // char prev=inb(0x71);	// get initial value of register A
+    // outb(0x8A,0x70);		// reset index to A
+    // outb((prev & 0xF0) | rate, 0x71); //write only our rate to A. Note, rate is the bottom 4 bits.
+    // //sti();
     return 0;
 }
 
