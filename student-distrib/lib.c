@@ -478,8 +478,3 @@ void test_interrupts(void) {
         video_mem[i << 1]++;
     }
 }
-
-void update_videomem(int addr)
-{
-    video_mem=addr;
-}

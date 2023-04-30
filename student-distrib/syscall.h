@@ -50,6 +50,7 @@ typedef struct pcb{
 extern pcb_t pcb_array[6];
 extern pcb_t * pcb_ptr;
 int search_pid();
+extern int termprogactive;
 
 #endif
 

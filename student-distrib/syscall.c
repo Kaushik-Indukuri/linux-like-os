@@ -23,6 +23,7 @@
 pcb_t* pcb_ptr = 0;
 pcb_t pcb_array[6];
 int pid_array[6];
+int termprogactive = -1;
 file_operations_t stdin;
 file_operations_t stdout;
 file_operations_t rtc;
@@ -39,7 +40,14 @@ char arg[32];
 #define KERNEL_TSS  0x0030
 #define KERNEL_LDT  0x0038
 
-
+/*
+ * flushtlb
+ *   DESCRIPTION: Flushes TLB
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: Flushes TLB (CR3)
+ */
 void flushtlb() {
     asm volatile(" \n\
         movl %%cr3, %%eax \n\
@@ -51,6 +59,14 @@ void flushtlb() {
     );
 }
 
+/*
+ * syscall_init
+ *   DESCRIPTION: Initializes system calls
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: Opens for syscalls
+ */
 void syscall_init() {
     rtc.open = rtc_open;
     rtc.close = rtc_close;
@@ -83,6 +99,7 @@ void syscall_init() {
 int32_t halt (const uint32_t command)
 {
     kbdenable=1; //reenable keyboard
+    termprogactive = -1;
     //pcb_ptr = pcb_array + pid;
     uint32_t ret;
     ret = (uint32_t)command;
@@ -119,16 +136,6 @@ int32_t halt (const uint32_t command)
         :"a"(ebp),"b"(esp),"c"(ret)
         : "memory"
     );
-    // asm volatile(" \n\
-    //     movl %%eax, %%ebp\n\
-    //     movl %%ebx, %%esp\n\
-    //     movl %%ecx, %%eax\n\
-    //     jmp executeRet \n\
-    //     "
-    //     :
-    //     :"a"(ebp),"b"(esp),"c"(ret)
-    //     : "memory"
-    // );
     return -1;
 }
 
@@ -190,9 +197,10 @@ int32_t execute (const uint8_t* command)
         arg[argStart+1] = '\0';
     }
     file_exec[cmdLen] = '\0';
-    if(strncmp(file_exec, "pingpong", 8)==0 || strncmp(file_exec, "fish", 8)==0)
+    if(strncmp(file_exec, "pingpong", 8)==0 || strncmp(file_exec, "fish", 4)==0 || strncmp(file_exec, "counter", 7)==0)
     {
         kbdenable=0; //If pingpong or fish run , do not take KB input, but reenable in halt 
+        termprogactive = curr_terminal;
     }
     /*Check executable*/
     dentry_t dentry;
@@ -313,21 +321,6 @@ int32_t execute (const uint8_t* command)
         :"a"(USER_DS),"b"(new_esp),"c"(USER_CS),"d"(new_eip)
         : "memory"
     );
-    //  asm volatile(" \n\
-    //     pushl %%eax \n\
-    //     pushl %%ebx \n\
-    //     pushfl \n\
-    //     pushl %%ecx \n\
-    //     pushl %%edx  \n\
-    //     iret    \n\
-    //     executeRet: \n\
-    //     leave \n\
-    //     ret \n\
-    //     "
-    //     :
-    //     :"a"(USER_DS),"b"(new_esp),"c"(USER_CS),"d"(new_eip)
-    //     : "memory"
-    // );
     return 0;
 }
 
@@ -536,13 +529,18 @@ int32_t vidmap (uint8_t** screen_start)
     page_directory[34].rw=1;        
     page_directory[34].addrlong= (int)(video_mapping)/KB4;
     flushtlb();
-    // How / Why modify screen start
-    // uint32_t* ofset=((MB_8 + KB4*2)); // 2nd KB assigned, this is 2nd
-    // *screen_start =(uint32_t*) ((MB_8 + KB4*2)); //How do I calculate offset for mem that screen start has
     *screen_start =(uint8_t*) (MB132); // 132 MB
     return 0;
 }
 
+/*
+ * search_pid
+ *   DESCRIPTION: Searches PID array for open slot
+ *   INPUTS: none
+ *   OUTPUTS: Open PID index
+ *   RETURN VALUE: -1 if fail, 0 if success
+ *   SIDE EFFECTS: none
+ */
 int search_pid() {
     int i;
     for (i = 0; i < 6; i++) {

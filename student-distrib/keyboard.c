@@ -75,7 +75,7 @@ void keyboard_ir_handler()
     }
     if(keystroke==0x26 && ctrlFlag) //0x26 = keycode for L
     {
-        int i;
+        // int i;
         clear();
         screen_x = 0;
         screen_y = 0;

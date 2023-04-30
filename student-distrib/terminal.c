@@ -205,8 +205,8 @@ void terminal_switch(int destination)
     screen_x = saved_x[destination];
     screen_y = saved_y[destination];
     update_cursor(screen_x,screen_y);
-    memcpy(vidstart+curr_terminal*KB4,video_mem,4096);
-    memcpy(video_mem,vidstart+destination*KB4,4096);
+    memcpy((void*)(vidstart+curr_terminal*KB4),video_mem,4096);
+    memcpy(video_mem,(void*)(vidstart+destination*KB4),4096);
     flushtlb();
     curr_terminal = destination;
     pcb_ptr = pcb_array + terminal_pid[curr_terminal];

@@ -12,7 +12,7 @@
 void init_pit();
 /*Function that handles PIT interrupts*/
 void pit_ir_handler();
-
+/*Function for handling scheduling interrupts*/
 void schedule();
 
 

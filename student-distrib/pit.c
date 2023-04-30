@@ -18,7 +18,14 @@
 int reset_term = 0;
 int int_freq = 20;/*18.2-1193182 Hz*/
 
-
+/*
+ * init_pit
+ *   DESCRIPTION: Initializes PIT to desired frequency
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: PIT frequency set to one above
+ */
 void init_pit() 
 {
     outb(pitmode, pit_command);
@@ -27,13 +34,28 @@ void init_pit()
     enable_irq(0);
 }
 
-
+/*
+ * pit_ir_handler
+ *   DESCRIPTION: PIT IR handler function
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: Calls schedule function
+ */
 void pit_ir_handler() 
 {
     schedule();
     send_eoi(0);
 }
 
+/*
+ * schedule
+ *   DESCRIPTION: Function for managing scheduling interrupts
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: Opens shells for 3 base terminals
+ */
 void schedule() 
 {
     int pid = (int)terminal_pid[scheduled_terminal%3]; 
@@ -53,19 +75,14 @@ void schedule()
         terminal_switch(0);
         reset_term=0;
     }
-    
-    // if(pcb_ptr->host_terminal != curr_terminal)
-    // {
-    //     video_mem = VIDEO+MB_4*(pcb_ptr->host_terminal);
-    // }
-    scheduled_terminal++; // make unsigned???
-    //flushtlb();
+    scheduled_terminal++; 
+    flushtlb();
     
     /*
     pid = terminal_pid[scheduled_terminal];
     pcb_ptr = pcb_array + pid;
-    // page_directory[32].addrlong = ((MB_8 + MB_4*pid) + user_program_start)>>22; //Add offset, removed 4mB aligb
-    page_directory[32].addrlong = (MB_8 + MB_4*pid) + user_program_start; //Add offset, removed 4mB aligb
+    page_directory[32].addrlong = ((MB_8 + MB_4*pid) + user_program_start)>>22;
+    page_directory[32].addrlong = (MB_8 + MB_4*pid) + user_program_start;
     asm volatile(" \n\
         movl %%cr3, %%eax \n\
         movl %%eax, %%cr3 \n\
@@ -78,7 +95,7 @@ void schedule()
     uint32_t ebp = pcb_ptr->cur_ebp;
 
 
-    tss.ss0 = KERNEL_DS; // dont neeed
+    tss.ss0 = KERNEL_DS; 
     tss.esp0 = pcb_ptr->cur_tss;
     send_eoi(0);
     asm volatile(" \n\
@@ -88,7 +105,8 @@ void schedule()
         :
         :"a"(esp),"b"(ebp)
         : "memory"
-    );
-   removed leave and ret after movls
-   */
+    );*/
 }
+
+
+
