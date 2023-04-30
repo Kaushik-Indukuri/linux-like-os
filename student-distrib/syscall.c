@@ -197,7 +197,7 @@ int32_t execute (const uint8_t* command)
         arg[argStart+1] = '\0';
     }
     file_exec[cmdLen] = '\0';
-    if(strncmp(file_exec, "pingpong", 8)==0 || strncmp(file_exec, "fish", 4)==0 || strncmp(file_exec, "counter", 7)==0)
+    if(strncmp(file_exec, "pingpong", 8)==0 || strncmp(file_exec, "fish", 4)==0)
     {
         kbdenable=0; //If pingpong or fish run , do not take KB input, but reenable in halt 
         termprogactive = curr_terminal;
