@@ -105,6 +105,9 @@ int32_t halt (const uint32_t command)
     ret = (uint32_t)command;
     int i;
     for (i = 0; i < 8; i++) {
+        if (pcb_ptr->file_array[i].flags) {
+            close(i);
+        }
         pcb_ptr->file_array[i].flags = 0;
     }
     int pid = pcb_ptr->pid;
