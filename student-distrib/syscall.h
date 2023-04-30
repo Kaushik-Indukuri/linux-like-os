@@ -43,13 +43,12 @@ typedef struct pcb{
     uint32_t cur_ebp;
     uint32_t cur_tss;
     uint32_t host_terminal;
+    uint32_t active;
     file_descriptor_t file_array[8]; // 8 locations in file array
 } pcb_t;
 
 extern pcb_t pcb_array[6];
 extern pcb_t * pcb_ptr;
-
-
 int search_pid();
 
 #endif

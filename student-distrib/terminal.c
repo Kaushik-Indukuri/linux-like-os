@@ -40,10 +40,6 @@ int terminal_open(const uint8_t* filename)
         clear_kbdBuf(i);
     }
     update_cursor(screen_x,screen_y);
-    keyboard_init();
-       vidmap(0);
-        //     vidmap(vidstart+KB4);
-        //         vidmap(vidstart+KB4*2);
     return 0;
 }
 /*
@@ -75,17 +71,14 @@ int terminal_close(int32_t fd)
  */
 int terminal_read(int32_t fd, void* buf, int32_t n)
 {
-    //char * buf2 = (char *)buf;
     while(termLineBuffer[curr_terminal][termBufPos[curr_terminal]] != '\n'); //Waits until new line char is recieved
     termLineBuffer[curr_terminal][termBufPos[curr_terminal]] = 0x00;
     int i;
-    // cli();
     for(i=0;i<n;i++)
     {
         ((char*)buf)[i] = termLineBuffer[curr_terminal][i]; //Copies keyboard buffer to buf
     }
     clear_termBuf(curr_terminal);
-    //sti();
     return n;
 }
 /*
@@ -201,37 +194,6 @@ void clear_termBuf(int terminal)
     }
 }
 
-
-
-
-void terminal_vidmem_switch(int destination)
-{
-    // Save screen x and y
-    // screen_x = saved_x[destination];
-    // screen_y = saved_y[destination];
-
-    // if(curr_terminal== destination)
-    // {
-    //     video_mapping[curr_terminal].p=1;
-    //     video_mapping[0].addr=VIDEO+curr_terminal;   
-    // }
-    // else
-    // {
-    //     video_mapping[curr_terminal].p=1;
-    //     video_mapping[curr_terminal].addr=VIDEO+curr_terminal;
-    //     video_mapping[destination].addr=VIDEO;
-                   
-
-    // }
-
-    // page_table[34]
-    // page_table[VIDEO+curr_terminal].addr =VIDEO; 
-    // page_table[VIDEO+curr_terminal].p =VIDEO;
-    // video_mem[0]=
-    // flushtlb();
-}
-
-
 void terminal_switch(int destination)
 {
     if(destination>2||destination<0)
@@ -247,31 +209,5 @@ void terminal_switch(int destination)
     memcpy(video_mem,vidstart+destination*KB4,4096);
     flushtlb();
     curr_terminal = destination;
-    
-/*
-    if displayed pcb, change number
-    curr process / user process is correct
-    set esp, move termainal 
-    save curr esp ebp, load new esp ebp
-    send eoi(1)
-    
-    int pid = (int)terminal_pid[scheduled_terminal%3]; // added mod 3
-    if (pid != -1) {
-        register uint32_t ebp asm("ebp");
-        register uint32_t esp asm("esp");
-        pcb_ptr->cur_esp = esp;
-        pcb_ptr->cur_ebp = ebp;
-        // pcb_ptr->cur_tss = tss.esp0; // dont neeed
-    }
-
-    
-    tss.esp0 = pcb_ptr->cur_tss;
-    asm volatile(" \n\
-        movl %%eax, %%esp \n\
-        movl %%ebx, %%ebp \n\
-        "
-        :
-        :"a"(esp),"b"(ebp)
-        : "memory"
-    );*/
+    pcb_ptr = pcb_array + terminal_pid[curr_terminal];
 }

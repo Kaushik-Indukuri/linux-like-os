@@ -75,12 +75,15 @@ void keyboard_ir_handler()
     }
     if(keystroke==0x26 && ctrlFlag) //0x26 = keycode for L
     {
-        terminal_open(NULL);
-        // video_mem=(0xBA000);
-        // puts("Hello");
-        // video_mem=0xB8000;
+        int i;
+        clear();
+        screen_x = 0;
+        screen_y = 0;
+        clear_termBuf(curr_terminal);
+        clear_kbdBuf(curr_terminal);
+        update_cursor(screen_x,screen_y);
     }
-    if(altFlag && (keystroke==0xBB||keystroke==0xBC||keystroke==0xBD))
+    else if(altFlag && (keystroke==0xBB||keystroke==0xBC||keystroke==0xBD))
     {
         terminal_switch(keystroke-0xBB);
     }

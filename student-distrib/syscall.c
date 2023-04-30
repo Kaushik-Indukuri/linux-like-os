@@ -94,9 +94,8 @@ int32_t halt (const uint32_t command)
     pid_array[pid] = 0;
     if(pcb_ptr->parent_pid == -1 || terminal_shells[curr_terminal]==0)
     {
-        //pcb_ptr = pcb_array + pid;
-        // printf("Halt called from base shell.\n");
         execute((uint8_t*) "shell");
+        //terminal_shells[curr_terminal]++;
         return command;
     }
     uint32_t ebp = pcb_ptr->prev_ebp;
@@ -108,6 +107,7 @@ int32_t halt (const uint32_t command)
     page_directory[32].addrlong = (MB_8 + MB_4*(pcb_ptr->pid)) / KB4;
     flushtlb();
     terminal_shells[curr_terminal]--;
+    terminal_pid[curr_terminal] = pcb_ptr->pid;
     asm volatile(" \n\
         movl %%eax, %%ebp\n\
         movl %%ebx, %%esp\n\
@@ -231,10 +231,15 @@ int32_t execute (const uint8_t* command)
     else {
         
         //parent_process = pcb_ptr->pid;
-        parent_process = curr_terminal; // Changed thos Yuga
+        parent_process = terminal_pid[curr_terminal];//curr_terminal+terminal_shells[curr_terminal]; // Changed thos Yuga
+        terminal_shells[curr_terminal]++;
 
     }
     pcb_ptr = pcb_array + pid;
+    if(strncmp(file_exec, "pingpong", 8)==0 || strncmp(file_exec, "fish", 8)==0)
+    {
+        kbdenable=0; //If pingpong or fish run , do not take KB input, but reenable in halt 
+    }
     uint8_t * program_ptr = (uint8_t *)(user_page_start + user_program_start);
     if (read_data(dentry.inode_num, 0, program_ptr, ((inode_t *)(boot_block_ptr) + 1 + dentry.inode_num)->length) == -1) {
         pid_array[pid] = 0;
@@ -243,7 +248,7 @@ int32_t execute (const uint8_t* command)
 
     pcb_ptr->pid = pid;
     pcb_ptr->parent_pid = parent_process;
-    terminal_pid[scheduled_terminal%3] = pid; //ADDED MOD
+    terminal_pid[curr_terminal] = pid; //ADDED MOD
     for (i = 2; i < 8; i++) { // 8 locations in file array
         pcb_ptr->file_array[i].inode = 0;
         pcb_ptr->file_array[i].file_position = 0;

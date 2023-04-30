@@ -15,7 +15,7 @@
 #define MB_4 (1<<22) // 4 MB
 #define VIDEO       0xB8000
 
-
+int reset_term = 0;
 int int_freq = 20;/*18.2-1193182 Hz*/
 
 
@@ -27,64 +27,68 @@ void init_pit()
     enable_irq(0);
 }
 
-// 
+
 void pit_ir_handler() 
 {
     schedule();
     send_eoi(0);
 }
 
-void schedule() {
-    // update_videomem(VIDEO+scheduled_terminal);
-    int pid = (int)terminal_pid[scheduled_terminal%3]; // added mod 3q
-    // if (pid != -1)
-    // {
-    //     video_mem = VIDEO+KB4*(curr_terminal+1);
-    // } 
-    // if(pcb_ptr != 0)
-    // {
-    //     register uint32_t ebpx asm("ebp");
-    //     register uint32_t espx asm("esp");
-    //     pcb_ptr->cur_esp = espx;
-    //     pcb_ptr->cur_ebp = ebpx;
-    //     // pcb_ptr->cur_tss = tss.esp0; // dont neeed
-    // }    
+void schedule() 
+{
+    int pid = (int)terminal_pid[scheduled_terminal%3]; 
     if (pid == -1) 
     {
         terminal_shells[scheduled_terminal%3]++;
         terminal_switch((scheduled_terminal)%3);
+        if(scheduled_terminal==2)
+        {
+            reset_term=1;
+        }
         send_eoi(0);
         execute((uint8_t*) "shell");
     }
-    scheduled_terminal++; // make unsigned???
-    flushtlb();
+    if(reset_term==1)
+    {
+        terminal_switch(0);
+        reset_term=0;
+    }
     
-    // pid = terminal_pid[scheduled_terminal];
-    // pcb_ptr = pcb_array + pid;
-    // // page_directory[32].addrlong = ((MB_8 + MB_4*pid) + user_program_start)>>22; //Add offset, removed 4mB aligb
-    // page_directory[32].addrlong = (MB_8 + MB_4*pid) + user_program_start; //Add offset, removed 4mB aligb
-    // asm volatile(" \n\
-    //     movl %%cr3, %%eax \n\
-    //     movl %%eax, %%cr3 \n\
-    //     "
-    //     :
-    //     :
-    //     : "memory"
-    // );
-    // uint32_t esp = pcb_ptr->cur_esp;
-    // uint32_t ebp = pcb_ptr->cur_ebp;
+    // if(pcb_ptr->host_terminal != curr_terminal)
+    // {
+    //     video_mem = VIDEO+MB_4*(pcb_ptr->host_terminal);
+    // }
+    scheduled_terminal++; // make unsigned???
+    //flushtlb();
+    
+    /*
+    pid = terminal_pid[scheduled_terminal];
+    pcb_ptr = pcb_array + pid;
+    // page_directory[32].addrlong = ((MB_8 + MB_4*pid) + user_program_start)>>22; //Add offset, removed 4mB aligb
+    page_directory[32].addrlong = (MB_8 + MB_4*pid) + user_program_start; //Add offset, removed 4mB aligb
+    asm volatile(" \n\
+        movl %%cr3, %%eax \n\
+        movl %%eax, %%cr3 \n\
+        "
+        :
+        :
+        : "memory"
+    );
+    uint32_t esp = pcb_ptr->cur_esp;
+    uint32_t ebp = pcb_ptr->cur_ebp;
 
 
-    // tss.ss0 = KERNEL_DS; // dont neeed
-    // tss.esp0 = pcb_ptr->cur_tss;
-    // send_eoi(0);
-    // asm volatile(" \n\
-    //     movl %%eax, %%esp \n\
-    //     movl %%ebx, %%ebp   \n\
-    //     "
-    //     :
-    //     :"a"(esp),"b"(ebp)
-    //     : "memory"
-    // );
-//    removed leave and ret after movls
+    tss.ss0 = KERNEL_DS; // dont neeed
+    tss.esp0 = pcb_ptr->cur_tss;
+    send_eoi(0);
+    asm volatile(" \n\
+        movl %%eax, %%esp \n\
+        movl %%ebx, %%ebp   \n\
+        "
+        :
+        :"a"(esp),"b"(ebp)
+        : "memory"
+    );
+   removed leave and ret after movls
+   */
 }

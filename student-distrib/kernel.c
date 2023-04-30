@@ -171,12 +171,7 @@ void entry(unsigned long magic, unsigned long addr) {
 
 #ifdef RUN_TESTS
     /* Run tests */
-    clear();
-    // ATTENTION PLEASE LOOK AT THIS LATER !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // LOOK HERE
-    // LOOKE HERE
-    // NOT FIXED
-
+    //clear();
     //launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
