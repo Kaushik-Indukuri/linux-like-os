@@ -31,7 +31,7 @@ void page_init()
         }
         page_table[i].pcd = 0;
         page_table[i].rw = 1;
-        page_table[i].us = 0;
+        page_table[i].us = 1;
         page_table[i].pwt = 0;
         page_table[i].a = 0;
         page_table[i].d = 0;

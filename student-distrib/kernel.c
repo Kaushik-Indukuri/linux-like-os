@@ -157,7 +157,7 @@ void entry(unsigned long magic, unsigned long addr) {
     rtc_init();
     terminal_open(NULL);
     init_pit();
-   
+
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
@@ -180,7 +180,7 @@ void entry(unsigned long magic, unsigned long addr) {
     //launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
-    execute((uint8_t*)"shell");
+    //  execute((uint8_t*)"shell");
     // execute("shell");
     //execute("testprint");
     /* Spin (nicely, so we don't chew up cycles) */

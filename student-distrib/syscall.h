@@ -36,13 +36,13 @@ typedef struct file_descriptor {
 typedef struct pcb{
     uint32_t pid;
     uint32_t parent_pid;  
-    //uint8_t active;
     uint32_t prev_ebp;
     uint32_t prev_esp;
     uint32_t prev_eip;
     uint32_t cur_esp;
     uint32_t cur_ebp;
     uint32_t cur_tss;
+    uint32_t host_terminal;
     file_descriptor_t file_array[8]; // 8 locations in file array
 } pcb_t;
 

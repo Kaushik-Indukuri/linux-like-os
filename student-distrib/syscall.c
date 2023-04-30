@@ -20,7 +20,7 @@
 #define tableI 0xb8 // location of only table initalized
 #define MB132 0x8800000
 
-pcb_t* pcb_ptr;
+pcb_t* pcb_ptr = 0;
 pcb_t pcb_array[6];
 int pid_array[6];
 file_operations_t stdin;
@@ -92,7 +92,7 @@ int32_t halt (const uint32_t command)
     }
     int pid = pcb_ptr->pid;
     pid_array[pid] = 0;
-    if(pid == 0)
+    if(pcb_ptr->parent_pid == -1 || terminal_shells[curr_terminal]==0)
     {
         //pcb_ptr = pcb_array + pid;
         // printf("Halt called from base shell.\n");
@@ -107,6 +107,7 @@ int32_t halt (const uint32_t command)
 
     page_directory[32].addrlong = (MB_8 + MB_4*(pcb_ptr->pid)) / KB4;
     flushtlb();
+    terminal_shells[curr_terminal]--;
     asm volatile(" \n\
         movl %%eax, %%ebp\n\
         movl %%ebx, %%esp\n\
@@ -118,6 +119,16 @@ int32_t halt (const uint32_t command)
         :"a"(ebp),"b"(esp),"c"(ret)
         : "memory"
     );
+    // asm volatile(" \n\
+    //     movl %%eax, %%ebp\n\
+    //     movl %%ebx, %%esp\n\
+    //     movl %%ecx, %%eax\n\
+    //     jmp executeRet \n\
+    //     "
+    //     :
+    //     :"a"(ebp),"b"(esp),"c"(ret)
+    //     : "memory"
+    // );
     return -1;
 }
 
@@ -135,6 +146,7 @@ int32_t halt (const uint32_t command)
 
 int32_t execute (const uint8_t* command)
 {
+    cli();
     /*Parse Arguements*/
     int space = 0;
     int i = 0;
@@ -173,7 +185,10 @@ int32_t execute (const uint8_t* command)
             }
         }
     }
-    arg[argStart+1] = '\0';
+    if(argStart<=29)
+    {
+        arg[argStart+1] = '\0';
+    }
     file_exec[cmdLen] = '\0';
     if(strncmp(file_exec, "pingpong", 8)==0 || strncmp(file_exec, "fish", 8)==0)
     {
@@ -209,11 +224,14 @@ int32_t execute (const uint8_t* command)
 
     /*Move exectubale data into virtual address space*/
     int parent_process;
-    if (pid == 0) {
-        parent_process = 0;
+    if (pid == 0 || pid == 1 || pid == 2) {
+        parent_process = -1;//curr_terminal + terminal_shells[curr_terminal]; // Changed thos Yuga
     }
     else {
-        parent_process = pcb_ptr->pid;
+        
+        //parent_process = pcb_ptr->pid;
+        parent_process = curr_terminal; // Changed thos Yuga
+
     }
     pcb_ptr = pcb_array + pid;
     uint8_t * program_ptr = (uint8_t *)(user_page_start + user_program_start);
@@ -224,7 +242,7 @@ int32_t execute (const uint8_t* command)
 
     pcb_ptr->pid = pid;
     pcb_ptr->parent_pid = parent_process;
-    terminal_pid[scheduled_terminal] = pid;
+    terminal_pid[scheduled_terminal%3] = pid; //ADDED MOD
     for (i = 2; i < 8; i++) { // 8 locations in file array
         pcb_ptr->file_array[i].inode = 0;
         pcb_ptr->file_array[i].file_position = 0;
@@ -267,6 +285,8 @@ int32_t execute (const uint8_t* command)
     pcb_ptr->prev_ebp = ebp;
     pcb_ptr->prev_esp = esp;
     //pcb_ptr->prev_eip = new_eip;
+    pcb_ptr->host_terminal = curr_terminal;
+
 
     tss.ss0 = KERNEL_DS;
     // 4 is for skipping first location
@@ -274,7 +294,6 @@ int32_t execute (const uint8_t* command)
     pcb_ptr->cur_tss = tss.esp0;
 
     sti();
-
 
      asm volatile(" \n\
         pushl %%eax \n\
@@ -288,6 +307,21 @@ int32_t execute (const uint8_t* command)
         :"a"(USER_DS),"b"(new_esp),"c"(USER_CS),"d"(new_eip)
         : "memory"
     );
+    //  asm volatile(" \n\
+    //     pushl %%eax \n\
+    //     pushl %%ebx \n\
+    //     pushfl \n\
+    //     pushl %%ecx \n\
+    //     pushl %%edx  \n\
+    //     iret    \n\
+    //     executeRet: \n\
+    //     leave \n\
+    //     ret \n\
+    //     "
+    //     :
+    //     :"a"(USER_DS),"b"(new_esp),"c"(USER_CS),"d"(new_eip)
+    //     : "memory"
+    // );
     return 0;
 }
 
@@ -457,7 +491,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes)
 {
     pcb_t* temp;
     temp= (pcb_t*)(MB_8-(KB_8*(pcb_ptr->pid)) - 4); //This addr is same we used to get execute addr, but no PID so?
-    if(buf==NULL || nbytes<0 || temp==NULL)
+    if(buf==NULL || nbytes<=0 || temp==NULL || strlen(arg)==0)
     {
         return -1;
     }

@@ -76,6 +76,9 @@ void keyboard_ir_handler()
     if(keystroke==0x26 && ctrlFlag) //0x26 = keycode for L
     {
         terminal_open(NULL);
+        // video_mem=(0xBA000);
+        // puts("Hello");
+        // video_mem=0xB8000;
     }
     if(altFlag && (keystroke==0xBB||keystroke==0xBC||keystroke==0xBD))
     {

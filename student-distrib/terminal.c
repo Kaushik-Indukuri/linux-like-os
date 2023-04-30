@@ -9,6 +9,7 @@ int screenHeight = 25;//Screen height = 25 chars
 int saved_x[3] = {0,0,0};
 int saved_y[3] = {0,0,0};
 int terminal_pid[3] = {-1,-1,-1};
+int terminal_shells[3] = {0,0,0};
 
 char termLineBuffer[3][128];
 int termBufPos[3];
@@ -16,6 +17,7 @@ int curr_terminal = 0;
 int scheduled_terminal = 0;
 #define vidstart 0xB9000
 #define KB4 4096
+#define VIDEO  0xB8000
 
 /*
  * terminal_open
@@ -39,7 +41,7 @@ int terminal_open(const uint8_t* filename)
     }
     update_cursor(screen_x,screen_y);
     keyboard_init();
-        vidmap(0);
+       vidmap(0);
         //     vidmap(vidstart+KB4);
         //         vidmap(vidstart+KB4*2);
     return 0;
@@ -77,13 +79,13 @@ int terminal_read(int32_t fd, void* buf, int32_t n)
     while(termLineBuffer[curr_terminal][termBufPos[curr_terminal]] != '\n'); //Waits until new line char is recieved
     termLineBuffer[curr_terminal][termBufPos[curr_terminal]] = 0x00;
     int i;
-    cli();
+    // cli();
     for(i=0;i<n;i++)
     {
         ((char*)buf)[i] = termLineBuffer[curr_terminal][i]; //Copies keyboard buffer to buf
     }
     clear_termBuf(curr_terminal);
-    sti();
+    //sti();
     return n;
 }
 /*
@@ -109,7 +111,12 @@ int terminal_write(int32_t fd, const void* buf, int32_t n)
                 }
                 else
                 {
+                    // cli();
+                    // int backup=video_mem;
+                    // video_mem= scheduled_terminal*KB4 + VIDEO;
                     putc(((char*)buf)[i]);
+                    // video_mem=backup;
+                    // sti();
                 }
                 if(((char*)buf)[i] != '\n')
                 {
@@ -133,6 +140,8 @@ int terminal_write(int32_t fd, const void* buf, int32_t n)
                 else
                 {
                     putc(((char*)buf)[i]);
+                    // video_mem=backup;
+                    // sti();
                 }
                 if(screen_y == screenHeight)
                 {
@@ -200,9 +209,39 @@ void clear_termBuf(int terminal)
 }
 
 
+
+
+void terminal_vidmem_switch(int destination)
+{
+    // Save screen x and y
+    // screen_x = saved_x[destination];
+    // screen_y = saved_y[destination];
+
+    // if(curr_terminal== destination)
+    // {
+    //     video_mapping[curr_terminal].p=1;
+    //     video_mapping[0].addr=VIDEO+curr_terminal;   
+    // }
+    // else
+    // {
+    //     video_mapping[curr_terminal].p=1;
+    //     video_mapping[curr_terminal].addr=VIDEO+curr_terminal;
+    //     video_mapping[destination].addr=VIDEO;
+                   
+
+    // }
+
+    // page_table[34]
+    // page_table[VIDEO+curr_terminal].addr =VIDEO; 
+    // page_table[VIDEO+curr_terminal].p =VIDEO;
+    // video_mem[0]=
+    // flushtlb();
+}
+
+
 void terminal_switch(int destination)
 {
-    if(destination>2||destination<0||destination==curr_terminal)
+    if(destination>2||destination<0)
     {
         return;
     }
@@ -213,6 +252,40 @@ void terminal_switch(int destination)
     update_cursor(screen_x,screen_y);
     memcpy(vidstart+curr_terminal*KB4,video_mem,4096);
     memcpy(video_mem,vidstart+destination*KB4,4096);
-    flushtlb();
+    asm volatile(" \n\
+        movl %%cr3, %%eax \n\
+        movl %%eax, %%cr3 \n\
+        "
+        :
+        :
+        : "memory"
+    );
     curr_terminal = destination;
+    
+/*
+    if displayed pcb, change number
+    curr process / user process is correct
+    set esp, move termainal 
+    save curr esp ebp, load new esp ebp
+    send eoi(1)
+    
+    int pid = (int)terminal_pid[scheduled_terminal%3]; // added mod 3
+    if (pid != -1) {
+        register uint32_t ebp asm("ebp");
+        register uint32_t esp asm("esp");
+        pcb_ptr->cur_esp = esp;
+        pcb_ptr->cur_ebp = ebp;
+        // pcb_ptr->cur_tss = tss.esp0; // dont neeed
+    }
+
+    
+    tss.esp0 = pcb_ptr->cur_tss;
+    asm volatile(" \n\
+        movl %%eax, %%esp \n\
+        movl %%ebx, %%ebp \n\
+        "
+        :
+        :"a"(esp),"b"(ebp)
+        : "memory"
+    );*/
 }
