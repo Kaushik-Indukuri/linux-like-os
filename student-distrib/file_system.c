@@ -2,7 +2,8 @@
 #include "syscall.h"
 #define KB4 4096 //4kb in bits
 
-extern pcb_t *pcb_ptr;
+// extern pcb_t *pcb_ptr;
+
 
 /*
  * filesystem_init

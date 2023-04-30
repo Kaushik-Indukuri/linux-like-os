@@ -182,6 +182,8 @@ void putc(uint8_t c) {
     }
 }
 
+
+
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
  * Inputs: uint32_t value = number to convert
  *            int8_t* buf = allocated buffer to place string in

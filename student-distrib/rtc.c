@@ -10,11 +10,13 @@
 #define cmosREGA 0x8A
 #define cmosREGB 0x8B
 #define cmosREGC 0x8C
-#define standardFreq 2
+#define standardFreq 1024
 
 volatile int rtc_interrupt_flag=0;
 
 
+volatile int rtc_freq_counter=standardFreq;
+volatile int rtc_freq_store=standardFreq;
 
 /*
  * rtc_init
@@ -31,12 +33,24 @@ void rtc_init(void)
     enable_irq(8); //secondary pic to enable rtc interrupt
     //cli();
     //outportb(0x70, 0x8A); //Disable NMIs on reg A
-    //outportb(0x71, 0x20);
+    //outportb(0x71, 0x20);cat rtc
     outb(cmosREGB,rtcIO); //Disable NMIs on reg B
     char prev=inb(cmosIO); //Read current value of reg B
     outb(cmosREGB,rtcIO);		// set the index again (a read will reset the index to register D)
     outb(prev | 0x40,cmosIO);	// write the previous value ORed with 0x40. This turns on bit 6 of register B
     //sti();
+
+
+    int hardrate =rtc_logbase2(1024);			// rate must be above 2 and not over 15
+    cli();
+    outb(0x8A,0x70);		// set index to register A, disable NMI
+    char temp=inb(0x71);	// get initial value of register A
+    outb(0x8A,0x70);		// reset index to A
+    outb((temp & 0xF0) | hardrate, 0x71); //write only our rate to A. Note, rate is the bottom 4 bits.
+    sti();
+
+
+
 }
 
 /*
@@ -50,15 +64,22 @@ void rtc_init(void)
 
 void rtc_ir_handler()
 {
+    cli();
     outb(0x0C,rtcIO);	// select register C
     // terminal_write(0,"123",3);
     inb(cmosIO);
     //test_interrupts();
     send_eoi(8);
-    rtc_interrupt_flag=1;
+
+    rtc_freq_counter--;
+    if(rtc_freq_counter==0)
+    {
+        // rtc_freq_counter=standardFreq;
+        rtc_interrupt_flag=1;
+        rtc_freq_counter=standardFreq/rtc_freq_store;
+    }
+    sti();
 }
-
-
 
 /*
  * rtc_open
@@ -76,13 +97,15 @@ int32_t rtc_open(const uint8_t* filename)
     {
         return rate;
     }
-    rate &=0x0F;			// rate must be above 2 and not over 15
-    //cli();
-    outb(0x8A,0x70);		// set index to register A, disable NMI
-    char prev=inb(0x71);	// get initial value of register A
-    outb(0x8A,0x70);		// reset index to A
-    outb((prev & 0xF0) | rate, 0x71); //write only our rate to A. Note, rate is the bottom 4 bits.
-    //sti();
+    cli();
+    rtc_freq_store=standardFreq;
+    rtc_freq_counter=512;
+    // rate &=0x0F;			// rate must be above 2 and not over 15
+    // outb(0x8A,0x70);		// set index to register A, disable NMI
+    // char prev=inb(0x71);	// get initial value of register A
+    // outb(0x8A,0x70);		// reset index to A
+    // outb((prev & 0xF0) | rate, 0x71); //write only our rate to A. Note, rate is the bottom 4 bits.
+    // sti();
     return 0;
 }
 
@@ -96,6 +119,8 @@ int32_t rtc_open(const uint8_t* filename)
  */
 int32_t rtc_close(int32_t fd)
 {
+    rtc_interrupt_flag=0;
+    rtc_freq_counter=standardFreq;
     return 0;
 }
 
@@ -111,7 +136,10 @@ int32_t rtc_close(int32_t fd)
 int32_t rtc_read(int32_t fd, void* buf, int32_t nbytes)
 {
 
+    // rtc_freq_counter=standardFreq;
+    sti();
     rtc_interrupt_flag=0;
+    sti();
     while(rtc_interrupt_flag==0)
     {
         //while no interrupt recieved, keep reading
@@ -135,18 +163,21 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes)
     {
         return -1;
     }
-    int rate=rtc_logbase2( *(int *)buf);
-    if(rate==-1)
-    {
-        return rate;
-    }
-    rate &=0x0F;			// rate must be above 2 and not over 15
-    //cli();
-    outb(0x8A,0x70);		// set index to register A, disable NMI
-    char prev=inb(0x71);	// get initial value of register A
-    outb(0x8A,0x70);		// reset index to A
-    outb((prev & 0xF0) | rate, 0x71); //write only our rate to A. Note, rate is the bottom 4 bits.
-    //sti();
+    // int rate=rtc_logbase2( *(int *)buf);
+    // int hardrate= rtc_logbase2( *(int *)2); // hard set to 2Hz, returns 15
+    rtc_freq_store=*(int *)buf;
+    rtc_freq_counter=standardFreq/rtc_freq_store;
+    // if(hardrate==-1)
+    // {
+    //     return hardrate;
+    // }
+    // hardrate &=0x0F;			// rate must be above 2 and not over 15
+    // cli();
+    // outb(0x8A,0x70);		// set index to register A, disable NMI
+    // char prev=inb(0x71);	// get initial value of register A
+    // outb(0x8A,0x70);		// reset index to A
+    // outb((prev & 0xF0) | hardrate, 0x71); //write only our rate to A. Note, rate is the bottom 4 bits.
+    // sti();
     return 0;
 }
 

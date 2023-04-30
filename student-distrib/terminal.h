@@ -3,10 +3,13 @@
 
 #include "types.h"
 
-extern int termBufPos;
+extern int termBufPos[3];
+extern int curr_terminal;
+extern int scheduled_terminal;
+extern char termLineBuffer[3][128];
+extern int terminal_pid[3];
+extern int terminal_shells[3];
 
-
-extern char termLineBuffer [128];
 /*function to initialize terminal inputs and outputs*/
 int terminal_open(const uint8_t* filename);
 /*closes terminal for inputs and outputs*/
@@ -20,6 +23,8 @@ void update_cursor(int x, int y);
 /*scrolls terminal by one line*/
 void terminal_scroll();
 /*scrolls terminal screen by one line*/
-void clear_termBuf();
+void clear_termBuf(int terminal);
+/*switches active terminal*/
+void terminal_switch(int destination);
 
 #endif

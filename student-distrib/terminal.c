@@ -2,12 +2,22 @@
 #include "lib.h"
 #include "keyboard.h"
 #include "terminal.h"
+#include "syscall.h"
 
-char termLineBuffer [128];
 int screenWidth = 80;//Screen width = 80 chars
 int screenHeight = 25;//Screen height = 25 chars
-int termBufPos;
+int saved_x[3] = {0,0,0};
+int saved_y[3] = {0,0,0};
+int terminal_pid[3] = {-1,-1,-1};
+int terminal_shells[3] = {0,0,0};
 
+char termLineBuffer[3][128];
+int termBufPos[3];
+int curr_terminal = 0;
+int scheduled_terminal = 0;
+#define vidstart 0xB9000
+#define KB4 4096
+#define VIDEO  0xB8000
 
 /*
  * terminal_open
@@ -20,13 +30,16 @@ int termBufPos;
  
 int terminal_open(const uint8_t* filename)
 {
+    int i;
     clear();
     screen_x = 0;
     screen_y = 0;
+    for(i=0;i<3;i++)
+    {
+        clear_termBuf(i);
+        clear_kbdBuf(i);
+    }
     update_cursor(screen_x,screen_y);
-    clear_termBuf();
-    clear_kbdBuf();
-    keyboard_init();
     return 0;
 }
 /*
@@ -39,9 +52,13 @@ int terminal_open(const uint8_t* filename)
  */
 int terminal_close(int32_t fd)
 {
+    int i;
     update_cursor(screen_x,screen_y);
-    clear_termBuf();
-    clear_kbdBuf();
+    for(i=0;i<3;i++)
+    {
+        clear_termBuf(i);
+        clear_kbdBuf(i);
+    }
     return 0;
 }
 /*
@@ -54,17 +71,14 @@ int terminal_close(int32_t fd)
  */
 int terminal_read(int32_t fd, void* buf, int32_t n)
 {
-    //char * buf2 = (char *)buf;
-    while(termLineBuffer[termBufPos] != '\n'); //Waits until new line char is recieved
-    termLineBuffer[termBufPos] = 0x00;
+    while(termLineBuffer[curr_terminal][termBufPos[curr_terminal]] != '\n'); //Waits until new line char is recieved
+    termLineBuffer[curr_terminal][termBufPos[curr_terminal]] = 0x00;
     int i;
-    cli();
     for(i=0;i<n;i++)
     {
-        ((char*)buf)[i] = termLineBuffer[i]; //Copies keyboard buffer to buf
+        ((char*)buf)[i] = termLineBuffer[curr_terminal][i]; //Copies keyboard buffer to buf
     }
-    clear_termBuf();
-    sti();
+    clear_termBuf(curr_terminal);
     return n;
 }
 /*
@@ -101,7 +115,7 @@ int terminal_write(int32_t fd, const void* buf, int32_t n)
                 {
                     terminal_scroll(); //Scrolls to newline if input is at bottom
                     screen_y=24;
-                    kbdStart_y--;
+                    kbdStart_y[curr_terminal]--;
                 }
                 screen_x = 0;   
             }
@@ -119,7 +133,7 @@ int terminal_write(int32_t fd, const void* buf, int32_t n)
                 {
                     terminal_scroll();
                     screen_y=24;
-                    screen_x = 0;
+                    screen_x=0;
                 }
             }
         }
@@ -171,11 +185,29 @@ void terminal_scroll()
  *   RETURN VALUE: none
  *   SIDE EFFECTS: none
  */
-void clear_termBuf()
+void clear_termBuf(int terminal)
 {
     int i;
     for(i = 0;i<128;i++)
     {
-        termLineBuffer[i] = 0x00;
+        termLineBuffer[terminal][i] = 0x00;
     }
+}
+
+void terminal_switch(int destination)
+{
+    if(destination>2||destination<0)
+    {
+        return;
+    }
+    saved_x[curr_terminal] = screen_x;
+    saved_y[curr_terminal] = screen_y;
+    screen_x = saved_x[destination];
+    screen_y = saved_y[destination];
+    update_cursor(screen_x,screen_y);
+    memcpy((void*)(vidstart+curr_terminal*KB4),video_mem,4096);
+    memcpy(video_mem,(void*)(vidstart+destination*KB4),4096);
+    flushtlb();
+    curr_terminal = destination;
+    pcb_ptr = pcb_array + terminal_pid[curr_terminal];
 }

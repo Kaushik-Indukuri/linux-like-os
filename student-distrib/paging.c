@@ -13,13 +13,25 @@ void page_init()
             page_table[i].p = 1;
             page_table[i].addr = tableI;
         }
+        else if (i == 0xb9) {
+            page_table[i].p = 1;
+            page_table[i].addr = 0xb9;
+        }
+        else if (i == 0xba) {
+            page_table[i].p = 1;
+            page_table[i].addr = 0xba;
+        }
+        else if (i == 0xbb) {
+            page_table[i].p = 1;
+            page_table[i].addr = 0xbb;
+        }
         else {
             page_table[i].p = 0;
             page_table[i].addr = 0;
         }
         page_table[i].pcd = 0;
         page_table[i].rw = 1;
-        page_table[i].us = 0;
+        page_table[i].us = 1;
         page_table[i].pwt = 0;
         page_table[i].a = 0;
         page_table[i].d = 0;
