@@ -146,7 +146,7 @@ int32_t halt (const uint32_t command)
 
 int32_t execute (const uint8_t* command)
 {
-    cli();
+    // cli();
     /*Parse Arguements*/
     int space = 0;
     int i = 0;
@@ -216,6 +216,7 @@ int32_t execute (const uint8_t* command)
     int pid = search_pid();
     if (pid == -1) {
         terminal_write(2,"Max Processes Reached\n",22); // Num char of string
+        kbdenable = 1;
         return 0;
     }
     page_directory[32].addrlong = (MB_8 + MB_4*pid) / KB4; //32nd index

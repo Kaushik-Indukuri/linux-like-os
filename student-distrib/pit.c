@@ -15,6 +15,7 @@
 #define MB_4 (1<<22) // 4 MB
 #define VIDEO       0xB8000
 
+
 int int_freq = 20;/*18.2-1193182 Hz*/
 
 
@@ -29,7 +30,6 @@ void init_pit()
 // 
 void pit_ir_handler() 
 {
-    // terminal_write(2,"hi",2);
     schedule();
     send_eoi(0);
 }
@@ -41,22 +41,21 @@ void schedule() {
     // {
     //     video_mem = VIDEO+KB4*(curr_terminal+1);
     // } 
-    if(pcb_ptr != 0)
-    {
-        register uint32_t ebpx asm("ebp");
-        register uint32_t espx asm("esp");
-        pcb_ptr->cur_esp = espx;
-        pcb_ptr->cur_ebp = ebpx;
-        // pcb_ptr->cur_tss = tss.esp0; // dont neeed
-    }    
+    // if(pcb_ptr != 0)
+    // {
+    //     register uint32_t ebpx asm("ebp");
+    //     register uint32_t espx asm("esp");
+    //     pcb_ptr->cur_esp = espx;
+    //     pcb_ptr->cur_ebp = ebpx;
+    //     // pcb_ptr->cur_tss = tss.esp0; // dont neeed
+    // }    
     if (pid == -1) 
     {
-        terminal_shells[curr_terminal]++;
+        terminal_shells[scheduled_terminal%3]++;
         terminal_switch((scheduled_terminal)%3);
         send_eoi(0);
         execute((uint8_t*) "shell");
     }
-
     scheduled_terminal++; // make unsigned???
     flushtlb();
     

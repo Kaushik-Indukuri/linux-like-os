@@ -111,12 +111,7 @@ int terminal_write(int32_t fd, const void* buf, int32_t n)
                 }
                 else
                 {
-                    // cli();
-                    // int backup=video_mem;
-                    // video_mem= scheduled_terminal*KB4 + VIDEO;
                     putc(((char*)buf)[i]);
-                    // video_mem=backup;
-                    // sti();
                 }
                 if(((char*)buf)[i] != '\n')
                 {
@@ -140,8 +135,6 @@ int terminal_write(int32_t fd, const void* buf, int32_t n)
                 else
                 {
                     putc(((char*)buf)[i]);
-                    // video_mem=backup;
-                    // sti();
                 }
                 if(screen_y == screenHeight)
                 {
@@ -252,14 +245,7 @@ void terminal_switch(int destination)
     update_cursor(screen_x,screen_y);
     memcpy(vidstart+curr_terminal*KB4,video_mem,4096);
     memcpy(video_mem,vidstart+destination*KB4,4096);
-    asm volatile(" \n\
-        movl %%cr3, %%eax \n\
-        movl %%eax, %%cr3 \n\
-        "
-        :
-        :
-        : "memory"
-    );
+    flushtlb();
     curr_terminal = destination;
     
 /*
