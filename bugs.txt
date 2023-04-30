@@ -1,4 +1,3 @@
-
 3/19, Sudo Make Exception
     E: make dep works, but sudo make gives error saying "./debug.sh does not exist"
     F: Ran command "dos2unix debug.sh" and rebooted vm and compiled fine.
@@ -174,3 +173,51 @@ CP4:
 4/17,
     E: cat with no args does should say no args but does not  
     F: Added coniditional to the read/write so that if file name len to be read is 0, return -1
+
+________________________________________________________________________________________________________
+CP5:
+
+4/25,
+    E: Whenever the pcb and parent id variable were changed, the terminal wouldn't accept input anymore
+    F: We didn't send an EOI before executing the first three shells 
+
+4/25,
+    E: The asm in pit.c was causing a bootloop error 
+    F: There was no leave or ret in the asm causing this error
+
+4/25,
+    E: There were too many shells opening and after using gdb we found four shells had initially opened
+    F: In kernerl.C we had an additional execute shell command but the schedule is supposed to execute shell instead
+
+4/26,
+    E: Whenever three shells were open, the second and third terminal didn't have the opening message for shells "Starting 391 Shell" 
+    F: We weren't terminal switch before executing a new shell
+
+4/26,
+    E: When two shells were open in each terminal we able to exit out of more shells than existed in that terminal
+    F: We setup an array with a count of how many shells were in each terminal and we added to conditional in halt to check if there were no shells executing in the current Terminal
+
+4/26,
+    E: If there were a certain amount of shells running in the terminal, we weren't able to exit out of all of them
+    F: In execute we were not updating the parent processes correctly and the parent pid value was one higher than it was supposed to be so we decremented it
+
+4/26,
+    E: Fish was giving a general protection fault after we implemented multiple shells 
+    F: We were incermenting the scheduled terminal before executing a shell so we moved it after
+
+4/29,
+    E: When shell exit is called it wouldn't return to the parent shell
+    F: We incremented the current shell in execute 
+
+4/29,
+    E: Cat RTC didn't work 
+    F: We virtualized the RTC by using global counter variable to keep track of the desired frequency
+
+4/29,
+    E: The RTC was too slow and fish was not animating at the correct speed
+    F: The RTC handler was not manipulating the counter correctly and was not setting the interrupt flag at the correct location
+       We decremented the counter and set the interrupt flag to one if counter was greater than the frequency
+
+4/30,
+    E: When shell exit is called it wouldn't return to the parent shell
+    F: We incremented the current shell in execute 
