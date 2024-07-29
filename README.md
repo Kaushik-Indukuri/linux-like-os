@@ -14,7 +14,6 @@ This is the final project for ECE 391 at UIUC, where we developed a Linux-like o
 Features
 --------
 
-Required by course:
 - Memory paging
 - i8259 PIC interrupt handling
 - Exception handling
