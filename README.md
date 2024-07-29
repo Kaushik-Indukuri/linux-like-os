@@ -1,3 +1,27 @@
+ECE 391 Final Project: Linux-like Operating System
+==============================
+
+Caution: Do Not Copy!
+-------
+
+Do **NOT** copy this code without proper citation. Doing this is a violation of academic integrity.
+
+Overview
+--------
+
+This is the final project for ECE 391 at UIUC, where we developed a Linux-like operating system. The project is a collaborative effort by a team of four students. For details on individual contributions, please refer to the commit log.
+
+Features
+--------
+
+Required by course:
+- Memory paging
+- i8259 PIC interrupt handling
+- Exception handling
+- Keyboard input buffer
+- In memory read-only filesystem
+- Round-robin scheduling based on Programmable Interrupt Timer
+
 ACADEMIC INTEGRITY
 -----
 Please review the University of Illinois Student Code before starting,
